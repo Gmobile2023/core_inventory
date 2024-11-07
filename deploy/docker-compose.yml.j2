@@ -1,0 +1,27 @@
+version: "3.8"
+# volume section
+${VOLUME}
+# secret section
+${SECRET}
+networks:
+  net:
+services:
+  ${ENV_SERVICE_NAME}:
+    image: ${ENV_IZOTA_REPO}/${ENV_SERVICE_NAME}:${ENV_NAME}-latest
+    networks:
+      - net
+# environment section
+${ENV_ENVIRONMENT}
+${CONFIG_SELF}
+${EXTRA_DB}
+
+# deploy option section
+${DEPLOY_OPTION}
+# extra host section
+${EXTRA_HOST}
+# port section
+${PORT}
+# volume configuration section
+${VOLUME_CONFIG}
+# secret configuration section
+${SECRET_CONFIG}

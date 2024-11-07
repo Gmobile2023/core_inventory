@@ -1,0 +1,6 @@
+﻿services:
+  izota.core.esign.hosting:
+    image: izota.core.esign.hosting
+    build:
+      context: .
+      dockerfile: iZOTA.Core.eSign.Hosting/Dockerfile

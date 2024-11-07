@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ServiceStack" Version="8.4.0" />
+        <PackageReference Include="ServiceStack.Interfaces" Version="8.4.0" />
+    </ItemGroup>
+    
+
+    <ItemGroup>
+      <Compile Remove="ServiceRequests\RedemptionsRollbackRequest.cs" />
+      <Compile Remove="ServiceRequests\RedemptionsRequest.cs" />
+      <Compile Remove="Dtos\RedemptionsResponse.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Routes\Backend\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Inventory.Shared\Inventory.Shared.csproj" />
+    </ItemGroup>
+
+</Project>

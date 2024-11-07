@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>preview</LangVersion>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AWSSDK.S3" Version="3.7.308.6" />
+        <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.301" />
+        <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.6" />
+        <PackageReference Include="ServiceStack" Version="8.4.0" />
+        <PackageReference Include="ServiceStack.OrmLite.Sqlite.Data" Version="8.4.0" />
+        <PackageReference Include="ServiceStack.Extensions" Version="8.4.0" />
+        <PackageReference Include="ServiceStack.Server" Version="8.4.0" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.0" />
+        <PackageReference Include="MassTransit.RabbitMQ" Version="8.0.16" />
+        <PackageReference Include="MassTransit" Version="8.0.16" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Gmobile.Core.Inventory.Component\Gmobile.Core.Inventory.Component.csproj" />
+      <ProjectReference Include="..\Gmobile.Core.Inventory.Domain\Gmobile.Core.Inventory.Domain.csproj" />
+      <ProjectReference Include="..\Gmobile.Core.Inventory.Models\Gmobile.Core.Inventory.Models.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Configurations\Configure.Db.Migrations.cs" />
+      <Compile Remove="Configurations\Configure.OpenApi.cs" />
+    </ItemGroup>
+    <ItemGroup>
+      <Folder Include="Logs\" />
+    </ItemGroup>
+
+</Project>

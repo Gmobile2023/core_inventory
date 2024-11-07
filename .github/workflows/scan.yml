@@ -1,0 +1,31 @@
+name: Scan code
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - uat
+      - main
+      - master
+
+jobs:  
+  scan-code:
+    runs-on: llq
+    steps:
+      - name: Check environment
+        id: ver
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT;
+          elif [[ "${{ github.ref_name }}" =~ "develop" ]]; then
+            echo "environment=sandbox" >> $GITHUB_OUTPUT;
+          elif [[ "${{ github.ref_name }}" =~ "uat" ]]; then
+            echo "environment=uat" >> $GITHUB_OUTPUT;
+          fi
+      - name: Scan code
+        uses: Zopost2023/cicd-scan@master
+        with:
+          sonar-token: ${{ secrets.SONAR_TOKEN }}
+          sonar-host: ${{ secrets.SONAR_HOST_URL }}
+          project-name: ${{ vars.PROJECT_NAME }}
+          version: ${{ steps.ver.outputs.environment }}

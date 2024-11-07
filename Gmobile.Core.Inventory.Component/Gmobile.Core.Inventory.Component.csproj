@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="ServiceStack" Version="8.4.0" />
+		<PackageReference Include="ServiceStack.GrpcClient" Version="8.4.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Gmobile.Core.Inventory.Domain\Gmobile.Core.Inventory.Domain.csproj" />
+		<ProjectReference Include="..\Gmobile.Core.Inventory.Models\Gmobile.Core.Inventory.Models.csproj" />
+		<ProjectReference Include="..\Inventory.Contract\Inventory.Contract.csproj" />
+		<ProjectReference Include="..\Inventory.Shared\Inventory.Shared.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="Consumers\" />
+	  <Folder Include="Process\" />
+	</ItemGroup>
+
+</Project>

@@ -1,0 +1,60 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Contract", "Contract", "{68CAC86B-A836-4A3D-865E-DA75A2A3C603}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Inventory", "Inventory", "{A987BCA5-EF66-4610-8D10-D348DB6D679E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gmobile.Core.Inventory.Models", "Gmobile.Core.Inventory.Models\Gmobile.Core.Inventory.Models.csproj", "{3F4AD63C-0BFE-4089-B5F8-B0A9A7C1D5F4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gmobile.Core.Inventory.Hosting", "Gmobile.Core.Inventory.Hosting\Gmobile.Core.Inventory.Hosting.csproj", "{09053A26-7F8D-46EF-9C13-58B37336FFFB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gmobile.Core.Inventory.Domain", "Gmobile.Core.Inventory.Domain\Gmobile.Core.Inventory.Domain.csproj", "{A3380BB1-E019-4372-9D19-2C02D1F2414C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gmobile.Core.Inventory.Component", "Gmobile.Core.Inventory.Component\Gmobile.Core.Inventory.Component.csproj", "{FE55FC0B-F5C6-45A4-86D1-D9B107F19CF7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infrastructure", "Infrastructure", "{8A89759B-B817-4E43-83F4-3433D2D9674F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inventory.Shared", "Inventory.Shared\Inventory.Shared.csproj", "{7DB2F991-076D-4EE6-B406-D573FC4C657B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inventory.Contract", "Inventory.Contract\Inventory.Contract.csproj", "{D82996FC-62FF-4D50-8FAB-57B453B539D1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3F4AD63C-0BFE-4089-B5F8-B0A9A7C1D5F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F4AD63C-0BFE-4089-B5F8-B0A9A7C1D5F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F4AD63C-0BFE-4089-B5F8-B0A9A7C1D5F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F4AD63C-0BFE-4089-B5F8-B0A9A7C1D5F4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09053A26-7F8D-46EF-9C13-58B37336FFFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09053A26-7F8D-46EF-9C13-58B37336FFFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09053A26-7F8D-46EF-9C13-58B37336FFFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09053A26-7F8D-46EF-9C13-58B37336FFFB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A3380BB1-E019-4372-9D19-2C02D1F2414C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3380BB1-E019-4372-9D19-2C02D1F2414C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3380BB1-E019-4372-9D19-2C02D1F2414C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3380BB1-E019-4372-9D19-2C02D1F2414C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE55FC0B-F5C6-45A4-86D1-D9B107F19CF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE55FC0B-F5C6-45A4-86D1-D9B107F19CF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE55FC0B-F5C6-45A4-86D1-D9B107F19CF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE55FC0B-F5C6-45A4-86D1-D9B107F19CF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7DB2F991-076D-4EE6-B406-D573FC4C657B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7DB2F991-076D-4EE6-B406-D573FC4C657B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7DB2F991-076D-4EE6-B406-D573FC4C657B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7DB2F991-076D-4EE6-B406-D573FC4C657B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D82996FC-62FF-4D50-8FAB-57B453B539D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D82996FC-62FF-4D50-8FAB-57B453B539D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D82996FC-62FF-4D50-8FAB-57B453B539D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D82996FC-62FF-4D50-8FAB-57B453B539D1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3F4AD63C-0BFE-4089-B5F8-B0A9A7C1D5F4} = {A987BCA5-EF66-4610-8D10-D348DB6D679E}
+		{09053A26-7F8D-46EF-9C13-58B37336FFFB} = {A987BCA5-EF66-4610-8D10-D348DB6D679E}
+		{A3380BB1-E019-4372-9D19-2C02D1F2414C} = {A987BCA5-EF66-4610-8D10-D348DB6D679E}
+		{FE55FC0B-F5C6-45A4-86D1-D9B107F19CF7} = {A987BCA5-EF66-4610-8D10-D348DB6D679E}
+		{7DB2F991-076D-4EE6-B406-D573FC4C657B} = {8A89759B-B817-4E43-83F4-3433D2D9674F}
+		{D82996FC-62FF-4D50-8FAB-57B453B539D1} = {68CAC86B-A836-4A3D-865E-DA75A2A3C603}
+	EndGlobalSection
+EndGlobal
