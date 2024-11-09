@@ -1,6 +1,9 @@
 ﻿using Inventory.Shared.Dtos.ConfigDto;
+using System.Net;
 
 ServiceStackHelper.SetLicense();
+ServicePointManager.ServerCertificateValidationCallback +=
+    (_, _, _, _) => true;
 
 var builder = WebApplication.CreateBuilder(args);
 //var services = builder.Services;
