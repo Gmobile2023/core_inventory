@@ -46,5 +46,7 @@ namespace Gmobile.Core.Inventory.Models.Dtos
         public string UserConfirm { get; set; }
 
         public DateTime? ConfirmDate { get; set; }
+        
+        public int Quantity { get; set; }
     }
 }

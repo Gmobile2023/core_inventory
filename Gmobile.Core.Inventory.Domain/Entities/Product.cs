@@ -26,6 +26,10 @@ namespace Gmobile.Core.Inventory.Domain.Entities
 
         public ProductStatus Status { get; set; }
 
+        public int KitingStatus { get; set; }
+
+        public string Serial { get; set; }
+
         [StringLength(50)] public string TransCode { get; set; }
 
         public decimal CostPrice { get; set; }

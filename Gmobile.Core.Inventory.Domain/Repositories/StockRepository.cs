@@ -1,4 +1,5 @@
-﻿using Gmobile.Core.Inventory.Models.Dtos;
+﻿using Gmobile.Core.Inventory.Models.Const;
+using Gmobile.Core.Inventory.Models.Dtos;
 using Gmobile.Core.Inventory.Models.Routes.Backend;
 using Inventory.Shared.CacheManager;
 using Inventory.Shared.Dtos.CommonDto;
@@ -103,7 +104,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             using var trans = data.OpenTransaction();
             try
             {
-                var inventory = inventoryDto.ConvertTo<Entities.Inventory>();               
+                var inventory = inventoryDto.ConvertTo<Entities.Inventory>();
                 var inventoryRoles = roleItems.ConvertTo<List<Entities.InventoryRoles>>();
                 var id = await data.InsertAsync(inventory, true);
                 inventoryRoles.ForEach(c =>
@@ -171,6 +172,231 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                 trans.Rollback();
                 _logger.LogError($"Error UpdateInventory {inventoryDto.ToJson()} Exception: {ex}");
                 return ResponseMessageBase<string>.Error("Sửa kho không thành công. Vui lòng kiểm tra lại thông tin !");
+            }
+        }
+
+
+        /// <summary>
+        /// Kích hoạt kho
+        /// </summary>
+        /// <param name="stockId"></param>
+        /// <param name="userActive"></param>
+        /// <returns></returns>
+        public async Task<ResponseMessageBase<string>> ActiveInventory(int stockId, string userActive)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            using var trans = data.OpenTransaction();
+            try
+            {
+                var inventory = await data.SingleByIdAsync<Entities.Inventory>(stockId);
+                if (inventory == null)
+                {
+                    return ResponseMessageBase<string>.Error("Không tìm thấy kho !");
+                }
+
+                if (inventory.IsActive)
+                {
+                    return ResponseMessageBase<string>.Error("Kho đã kích hoạt !");
+                }
+
+                inventory.IsActive = true;
+                inventory.Status = InventoryStatus.Success;
+                inventory.UserConfirm = userActive;
+                inventory.ConfirmDate = DateTime.Now;
+                await data.UpdateAsync(inventory);
+                trans.Commit();
+                _logger.LogInformation($"ActiveInventory StockId= {stockId} - UserActive= {userActive} . Success ");
+                return ResponseMessageBase<string>.Success("Kích hoạt kho thành công");
+            }
+            catch (Exception ex)
+            {
+                trans.Rollback();
+                _logger.LogError($"Error ActiveInventory StockId= {stockId} - UserActive= {userActive} Exception: {ex}");
+                return ResponseMessageBase<string>.Error("Sửa kho không thành công. Vui lòng kiểm tra lại thông tin !");
+            }
+        }
+
+
+        /// <summary>
+        ///Thêm người bán vào kho
+        /// </summary>
+        /// <param name="stockId"></param>
+        /// <param name="userActive"></param>
+        /// <returns></returns>
+        public async Task<ResponseMessageBase<string>> AddSaleToInventory(int stockId, string userSale, string userCreate)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            using var trans = data.OpenTransaction();
+            try
+            {
+                var inventory = await data.SingleByIdAsync<Entities.Inventory>(stockId);
+                if (inventory == null)
+                {
+                    return ResponseMessageBase<string>.Error("Không tìm thấy kho !");
+                }
+
+                var inventoryRole = await data.SingleAsync<Entities.InventoryRoles>(c => c.StockId == stockId && c.AccountCode == userSale
+                && c.RoleType == RoleType.UserSale);
+
+                if (inventoryRole != null)
+                {
+                    return ResponseMessageBase<string>.Error("User đã tồn tại trong kho với vai trò người bán !");
+                }
+
+                inventoryRole = new Entities.InventoryRoles()
+                {
+                    AccountCode = userSale,
+                    RoleType = RoleType.UserSale,
+                    StockId = stockId,
+                    CreatedDate = DateTime.Now,
+                    UserCreated = userCreate,
+                };
+                await data.InsertAsync(inventory);
+                trans.Commit();
+                _logger.LogInformation($"AddSaleToInventory StockId= {stockId} - userSale= {userSale} - UserCreated= {userCreate} . Success ");
+                return ResponseMessageBase<string>.Success("Thêm người bán thành công");
+            }
+            catch (Exception ex)
+            {
+                trans.Rollback();
+                _logger.LogError($"Error AddSaleToInventory StockId= {stockId} - userSale= {userSale} - UserCreated= {userCreate} Exception: {ex}");
+                return ResponseMessageBase<string>.Error("Thêm người bán thất bại. Vui lòng kiểm tra lại thông tin !");
+            }
+        }
+
+
+        /// <summary>
+        /// Lấy chi tiết kho
+        /// </summary>
+        /// <param name="stockId"></param>
+        /// <returns></returns>
+        public async Task<ResponseMessageBase<InventoryDto>> GetDetailInventory(int stockId)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var inventory = await data.SingleByIdAsync<Entities.Inventory>(stockId);
+                var inventoryDto = inventory.ConvertTo<InventoryDto>();
+                _logger.LogInformation($"GetDetailInventory StockId= {stockId} . Success ");
+                return ResponseMessageBase<InventoryDto>.Success(inventoryDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error GetDetailInventory StockId= {stockId}  Exception: {ex}");
+                return ResponseMessageBase<InventoryDto>.Error("Không lấy được thông tin chi tiết của kho !");
+            }
+        }
+
+        /// <summary>
+        /// Lấy danh sách sim/số
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<ResponseMessageBase<PagedResultDto<SimDispalyDto>>> GetListSimInventory(StockListSimRequest request)
+        {
+            try
+            {
+                if (request.SimType == 2)
+                    return await GetListSerialInventory(request);
+                else return await GetListMobileInventory(request);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"GetListSimInventory Exception : {ex}");
+                return ResponseMessageBase<PagedResultDto<SimDispalyDto>>.Success();
+            }
+        }
+
+        /// <summary>
+        /// Danh sách số
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        private async Task<ResponseMessageBase<PagedResultDto<SimDispalyDto>>> GetListMobileInventory(StockListSimRequest request)
+        {
+            try
+            {
+                using var data = await _connectionFactory.OpenAsync();
+
+                var query = data.From<Entities.Product>().Where(p => p.StockCode == request.StockCode);
+
+                if (request.KitingStatus != 99)
+                {
+                    query = query.Where(c => c.KitingStatus == request.KitingStatus);
+                }
+
+                if (!string.IsNullOrEmpty(request.Mobile))
+                {
+                    request.Mobile = request.Mobile.Trim();
+                    query = query.Where(c => c.Mobile.Contains(request.Mobile));
+                }
+
+                if (!string.IsNullOrEmpty(request.Serial))
+                {
+                    request.Serial = request.Serial.Trim();
+                    query = query.Where(c => c.Serial.Contains(request.Serial));
+                }
+
+                var queryTotal = query;
+                query = query.OrderByDescending(c => c.CreatedDate)
+                    .Skip(request.SkipCount).Take(request.MaxResultCount);
+
+                var item = await data.SelectAsync(query);
+                var total = await data.CountAsync(queryTotal);
+                var dataView = item.ConvertTo<List<SimDispalyDto>>();
+                var reponse = new PagedResultDto<SimDispalyDto>()
+                {
+                    Items = dataView,
+                    TotalCount = total,
+                };
+
+                return ResponseMessageBase<PagedResultDto<SimDispalyDto>>.Success(reponse);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"GetListMobileInventory Exception : {ex}");
+                return ResponseMessageBase<PagedResultDto<SimDispalyDto>>.Success();
+            }
+        }
+
+        /// <summary>
+        /// Lấy danh sách serial
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        private async Task<ResponseMessageBase<PagedResultDto<SimDispalyDto>>> GetListSerialInventory(StockListSimRequest request)
+        {
+            try
+            {
+                using var data = await _connectionFactory.OpenAsync();
+
+                var query = data.From<Entities.Serials>().Where(p => p.StockCode == request.StockCode);
+
+                if (!string.IsNullOrEmpty(request.Serial))
+                {
+                    request.Serial = request.Serial.Trim();
+                    query = query.Where(c => c.Serial.Contains(request.Serial));
+                }
+
+                var queryTotal = query;
+                query = query.OrderByDescending(c => c.CreatedDate)
+                    .Skip(request.SkipCount).Take(request.MaxResultCount);
+
+                var item = await data.SelectAsync(query);
+                var total = await data.CountAsync(queryTotal);
+                var dataView = item.ConvertTo<List<SimDispalyDto>>();
+                var reponse = new PagedResultDto<SimDispalyDto>()
+                {
+                    Items = dataView,
+                    TotalCount = total,
+                };
+
+                return ResponseMessageBase<PagedResultDto<SimDispalyDto>>.Success(reponse);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"GetListSerialInventory Exception : {ex}");
+                return ResponseMessageBase<PagedResultDto<SimDispalyDto>>.Success();
             }
         }
 

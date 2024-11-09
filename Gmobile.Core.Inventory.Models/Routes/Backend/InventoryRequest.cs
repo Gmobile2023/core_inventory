@@ -95,10 +95,63 @@ namespace Gmobile.Core.Inventory.Models.Routes.Backend
         public List<AccountRoleType> RoleTypes { get; set; }
     }
 
+    [Description("Kích hoạt kho")]
+    [Tag(Name = "inventory")]
+    [Route("/api/v1/inventory/stock/acive", "POST")]
+    public class StockActiveRequest : IPost, IReturn<object>
+    {
+        public int Id { get; set; }
+        public string UserActive { get; set; }
+    }
+
+    [Description("Thêm người bán hàng")]
+    [Tag(Name = "inventory")]
+    [Route("/api/v1/inventory/stock/sale", "POST")]
+    public class StockAddSaleRequest : IPost, IReturn<object>
+    {
+        public int Id { get; set; }
+        public string UserSale { get; set; }
+
+        public string UserCreate { get; set; }
+    }
+
+    [Description("Chi tiết kho")]
+    [Tag(Name = "inventory")]
+    [Route("/api/v1/inventory/stock/{Id}", "GET")]
+    public class StockDetailRequest : IGet, IReturn<object>
+    {
+        public int Id { get; set; }        
+    }
+
     public class AccountRoleType
     {
         public string AccountCode { get; set; }
 
         public RoleType RoleType { get; set; }
+    }
+
+
+    [Description("Hàm lấy danh sách serial,số")]
+    [Tag(Name = "inventory")]
+    [Route("/api/v1/inventory/sim/list", "GET")]
+    public class StockListSimRequest : IReturn<object>
+    {
+        public string StockCode { get; set; }     
+
+        public int SimType { get; set; }
+
+        public string Mobile { get; set; }
+
+        public string Serial { get; set; }
+
+        public string CategoryCode { get; set; }
+
+        public string Attribute { get; set; }
+
+        public int Status { get; set; }
+
+        public int KitingStatus { get; set; }
+        public int SkipCount { get; set; }
+        public int MaxResultCount { get; set; }
     }
 }

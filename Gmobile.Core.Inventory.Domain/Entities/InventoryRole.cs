@@ -21,5 +21,9 @@ namespace Gmobile.Core.Inventory.Domain.Entities
         [StringLength(30)] public string AccountCode { get; set; }
 
         public RoleType RoleType { get; set; }
+
+        public string UserCreated { get; set; }
+
+        public DateTime CreatedDate { get; set; }
     }
 }

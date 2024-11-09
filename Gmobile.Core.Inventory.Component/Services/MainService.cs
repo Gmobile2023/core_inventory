@@ -41,14 +41,37 @@ public class MainService : Service
         return rs;
     }
 
-    // public async Task<ResponseMessageBase<string>> PutAsync(BookingConfirmOrderRequest request)
-    // {
-    //     _logger.LogInformation($"BookingConfirmOrderRequest {request.ToJson()}");
-    //     var rs = await _orderProcess.IpnRequest(request.ProviderCode, request.OrderCode, new ResStatus(ResponseCodeConst.Success));
-    //     _logger.LogInformation($"BookingConfirmOrderRequest return {rs.ToJson()}");
-    //     return new ResponseMessageBase<string>
-    //     {
-    //         ResponseStatus = rs.ResponseStatus
-    //     };
-    // }
+    public async Task<object> PostAsync(StockActiveRequest request)
+    {
+        _logger.LogInformation($"StockActiveRequest {request.ToJson()}");
+        var rs = await _stockService.ActiveInventory(request);
+        _logger.LogInformation($"StockActive Reponse: {rs.ToJson()}");
+        return rs;
+    }
+
+    public async Task<object> PostAsync(StockAddSaleRequest request)
+    {
+        _logger.LogInformation($"StockAddSaleRequest {request.ToJson()}");
+        var rs = await _stockService.AddSaleToInventory(request);
+        _logger.LogInformation($"StockAddSale Reponse: {rs.ToJson()}");
+        return rs;
+    }
+
+
+    public async Task<object> GetAsync(StockDetailRequest request)
+    {
+        _logger.LogInformation($"StockDetailRequest {request.ToJson()}");
+        var rs = await _stockService.GetDetailInventory(request.Id);
+        _logger.LogInformation($"StockDetail Reponse: {rs.ToJson()}");
+        return rs;
+    }
+
+    public async Task<object> GetAsync(StockListSimRequest request)
+    {
+        _logger.LogInformation($"StockListSimRequest {request.ToJson()}");
+        var rs = await _stockService.GetListSimInventory(request);
+        _logger.LogInformation($"StockListSim Reponse: {rs.ToJson()}");
+        return rs;
+    }
+
 }

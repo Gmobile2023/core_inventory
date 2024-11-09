@@ -16,5 +16,13 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
         Task<ResponseMessageBase<string>> CreateInventory(StockCreatedRequest request);
 
         Task<ResponseMessageBase<string>> UpdateInventory(StockUpdateRequest request);
+
+        Task<ResponseMessageBase<string>> ActiveInventory(StockActiveRequest request);
+
+        Task<ResponseMessageBase<string>> AddSaleToInventory(StockAddSaleRequest request);
+
+        Task<ResponseMessageBase<InventoryDto>> GetDetailInventory(int stockId);
+
+        Task<ResponseMessageBase<PagedResultDto<SimDispalyDto>>> GetListSimInventory(StockListSimRequest request);
     }
 }

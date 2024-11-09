@@ -60,7 +60,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
             ///Xử lý thêm phần mã kho??
             var inventoryDto = request.ConvertTo<InventoryDto>();
             inventoryDto.CreatedDate = DateTime.Now;
-            var roleItems = request.RoleTypes.ConvertTo<List<InventoryRoleDto>>(); 
+            var roleItems = request.RoleTypes.ConvertTo<List<InventoryRoleDto>>();
 
             return await _stockRepository.CreateInventory(inventoryDto, roleItems);
         }
@@ -73,19 +73,19 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
         public async Task<ResponseMessageBase<string>> UpdateInventory(StockUpdateRequest request)
         {
             #region 1.Validate
-        
+
             request.StockName = (request.StockName ?? string.Empty).Trim();
             request.StockType = (request.StockType ?? string.Empty).Trim();
             request.CityName = (request.CityName ?? string.Empty).Trim();
             request.DistrictName = (request.DistrictName ?? string.Empty).Trim();
             request.WardName = (request.WardName ?? string.Empty).Trim();
-            request.Address = (request.Address ?? string.Empty).Trim();         
+            request.Address = (request.Address ?? string.Empty).Trim();
 
             if (string.IsNullOrEmpty(request.StockName))
                 return ResponseMessageBase<string>.Error(MessagerErrorCode.EmptyName, "Tên kho không được để trống");
 
             if (string.IsNullOrEmpty(request.StockType))
-                return ResponseMessageBase<string>.Error(MessagerErrorCode.EmptyLevel, "Cấp kho không được để trống");            
+                return ResponseMessageBase<string>.Error(MessagerErrorCode.EmptyLevel, "Cấp kho không được để trống");
 
             if (request.RoleTypes == null || request.RoleTypes.Count <= 0)
                 return ResponseMessageBase<string>.Error(MessagerErrorCode.ExportRecover, "Chứa truyền người xuất và thu hồi");
@@ -98,6 +98,79 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
             var roleItems = request.RoleTypes.ConvertTo<List<InventoryRoleDto>>();
 
             return await _stockRepository.UpdateInventory(inventoryDto, roleItems);
+        }
+
+        /// <summary>
+        /// Kích hoạt kho
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<ResponseMessageBase<string>> ActiveInventory(StockActiveRequest request)
+        {
+            #region 1.Validate
+            request.UserActive = (request.UserActive ?? string.Empty).Trim();
+
+            if (request.Id <= 0)
+                return ResponseMessageBase<string>.Error("Quý khách chưa truyền Id của kho");
+
+            if (string.IsNullOrEmpty(request.UserActive))
+                return ResponseMessageBase<string>.Error("User thực hiện kích hoạt không được để trống");
+
+            #endregion
+
+            return await _stockRepository.ActiveInventory(request.Id, request.UserActive);
+        }
+
+        /// <summary>
+        /// Thêm người bán hàng vào kho
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<ResponseMessageBase<string>> AddSaleToInventory(StockAddSaleRequest request)
+        {
+            #region 1.Validate
+            request.UserCreate = (request.UserCreate ?? string.Empty).Trim();
+            request.UserSale = (request.UserSale ?? string.Empty).Trim();
+
+            if (request.Id <= 0)
+                return ResponseMessageBase<string>.Error("Quý khách chưa truyền Id của kho");
+
+            if (string.IsNullOrEmpty(request.UserCreate))
+                return ResponseMessageBase<string>.Error("User thực hiện không được để trống");
+
+            if (string.IsNullOrEmpty(request.UserSale))
+                return ResponseMessageBase<string>.Error("User bán hàng không được để trống");
+
+            #endregion
+
+            return await _stockRepository.AddSaleToInventory(request.Id, request.UserSale, request.UserCreate);
+        }
+
+        /// <summary>
+        /// Chi tiết kho 
+        /// </summary>
+        /// <param name="stockId"></param>
+        /// <returns></returns>
+        public async Task<ResponseMessageBase<InventoryDto>> GetDetailInventory(int stockId)
+        {
+            #region 1.Validate
+
+            if (stockId <= 0)
+                return ResponseMessageBase<InventoryDto>.Error("Quý khách chưa truyền Id của kho");
+
+            #endregion
+
+            return await _stockRepository.GetDetailInventory(stockId);
+        }
+
+        /// <summary>
+        /// Lấy danh sách sim/số
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<ResponseMessageBase<PagedResultDto<SimDispalyDto>>> GetListSimInventory(StockListSimRequest request)
+        {
+            return await _stockRepository.GetListSimInventory(request);
         }
     }
 }
