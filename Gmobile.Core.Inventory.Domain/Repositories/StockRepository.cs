@@ -32,7 +32,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<PagedResultDto<InventoryDto>> GetListInventory(StockListRequest request)
+        public async Task<ResponseMessageBase<PagedResultDto<InventoryDto>>> GetListInventory(StockListRequest request)
         {
             try
             {
@@ -76,16 +76,18 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                 var item = await data.SelectAsync(query);
                 var total = await data.CountAsync(queryTotal);
                 var dataView = item.ConvertTo<List<InventoryDto>>();
-                return new PagedResultDto<InventoryDto>()
+                var reponse = new PagedResultDto<InventoryDto>()
                 {
                     Items = dataView,
                     TotalCount = total,
                 };
+
+                return ResponseMessageBase<PagedResultDto<InventoryDto>>.Success(reponse);
             }
             catch (Exception ex)
             {
                 _logger.LogError($"GetInventoryList Exception : {ex}");
-                return new PagedResultDto<InventoryDto>();
+                return ResponseMessageBase<PagedResultDto<InventoryDto>>.Success();
             }
         }
 
@@ -101,7 +103,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             using var trans = data.OpenTransaction();
             try
             {
-                var inventory = inventoryDto.ConvertTo<Entities.Inventory>();
+                var inventory = inventoryDto.ConvertTo<Entities.Inventory>();               
                 var inventoryRoles = roleItems.ConvertTo<List<Entities.InventoryRoles>>();
                 var id = await data.InsertAsync(inventory, true);
                 inventoryRoles.ForEach(c =>

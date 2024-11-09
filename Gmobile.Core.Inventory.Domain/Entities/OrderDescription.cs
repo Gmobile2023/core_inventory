@@ -11,7 +11,7 @@ namespace Gmobile.Core.Inventory.Domain.Entities
 {
     [Schema("public")]
     [Alias("order_description")]
-    public class OrderDescription : AuditBase, IHasId<long>
+    public class OrderDescription : IHasId<long>
     {
         [AutoIncrement][PrimaryKey] public long Id { get; set; }
 

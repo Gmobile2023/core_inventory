@@ -11,7 +11,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
 {
     public interface IStockRepository
     {
-        Task<PagedResultDto<InventoryDto>> GetListInventory(StockListRequest request);
+        Task<ResponseMessageBase<PagedResultDto<InventoryDto>>> GetListInventory(StockListRequest request);
 
         Task<ResponseMessageBase<string>> CreateInventory(InventoryDto inventoryDto, List<InventoryRoleDto> roleItems);
 

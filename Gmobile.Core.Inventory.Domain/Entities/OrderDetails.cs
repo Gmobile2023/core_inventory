@@ -10,7 +10,7 @@ using ServiceStack.DataAnnotations;
 namespace Gmobile.Core.Inventory.Domain.Entities
 {
  
-    public class OrderDetails : AuditBase, IHasId<long>
+    public class OrderDetails : IHasId<long>
     {
         [AutoIncrement][PrimaryKey] public long Id { get; set; }
 

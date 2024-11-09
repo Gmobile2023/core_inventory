@@ -6,7 +6,7 @@ using ServiceStack;
 
 namespace Gmobile.Core.Inventory.Component.Services;
 
-public class MainService : AppServiceBase
+public class MainService : Service
 {
     private readonly ILogger<MainService> _logger;
     private readonly IStockService _stockService;

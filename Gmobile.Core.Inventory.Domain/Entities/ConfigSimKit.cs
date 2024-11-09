@@ -12,7 +12,7 @@ namespace Gmobile.Core.Inventory.Domain.Entities
 {
     [Schema("public")]
     [Alias("config_sim_kit")]
-    public class ConfigSimKit : AuditBase, IHasId<long>
+    public class ConfigSimKit : IHasId<long>
     {
         [AutoIncrement][PrimaryKey] public long Id { get; set; }
 

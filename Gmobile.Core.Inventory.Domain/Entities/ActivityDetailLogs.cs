@@ -11,7 +11,7 @@ namespace Gmobile.Core.Inventory.Domain.Entities
 {
     [Schema("public")]
     [Alias("activity_detail_logs")]
-    public class ActivityDetailLogs : AuditBase, IHasId<long>
+    public class ActivityDetailLogs : IHasId<long>
     {
         [AutoIncrement][PrimaryKey] public long Id { get; set; }
 

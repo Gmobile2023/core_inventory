@@ -19,7 +19,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
         {
             _stockRepository = stockRepository;
         }
-        public async Task<PagedResultDto<InventoryDto>> GetListInventory(StockListRequest request)
+        public async Task<ResponseMessageBase<PagedResultDto<InventoryDto>>> GetListInventory(StockListRequest request)
         {
             return await _stockRepository.GetListInventory(request);
         }

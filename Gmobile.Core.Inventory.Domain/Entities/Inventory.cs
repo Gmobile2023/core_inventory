@@ -12,7 +12,7 @@ namespace Gmobile.Core.Inventory.Domain.Entities
 {
     [Schema("public")]
     [Alias("inventory")]
-    public class Inventory : AuditBase, IHasId<long>
+    public class Inventory : IHasId<long>
     {
         [AutoIncrement][PrimaryKey] public long Id { get; set; }
 

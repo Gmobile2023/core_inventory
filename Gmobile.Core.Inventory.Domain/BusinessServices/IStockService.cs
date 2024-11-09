@@ -11,7 +11,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
 {
     public interface IStockService
     {
-        Task<PagedResultDto<InventoryDto>> GetListInventory(StockListRequest request);
+        Task<ResponseMessageBase<PagedResultDto<InventoryDto>>> GetListInventory(StockListRequest request);
 
         Task<ResponseMessageBase<string>> CreateInventory(StockCreatedRequest request);
 
