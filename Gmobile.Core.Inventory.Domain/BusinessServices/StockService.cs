@@ -172,5 +172,26 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
         {
             return await _stockRepository.GetListSimInventory(request);
         }
+
+        /// <summary>
+        /// Chi tiết sim/số
+        /// </summary>
+        /// <param name="number"></param>
+        /// <param name="simType"></param>
+        /// <returns></returns>
+        public async Task<ResponseMessageBase<SimDispalyDto>> GetSimDetailInventory(string number, int simType)
+        {
+            #region 1.Validate
+
+            if (string.IsNullOrEmpty(number))
+                return ResponseMessageBase<SimDispalyDto>.Error("Số/Serial không được để trống");
+
+            if (simType <= 0)
+                return ResponseMessageBase<SimDispalyDto>.Error("Quý khách cần truyền loại sim hoặc số");
+
+            #endregion
+
+            return await _stockRepository.GetSimDetailInventory(number, simType);
+        }
     }
 }

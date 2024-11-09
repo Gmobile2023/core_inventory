@@ -24,5 +24,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
         Task<ResponseMessageBase<InventoryDto>> GetDetailInventory(int stockId);
 
         Task<ResponseMessageBase<PagedResultDto<SimDispalyDto>>> GetListSimInventory(StockListSimRequest request);
+
+        Task<ResponseMessageBase<SimDispalyDto>> GetSimDetailInventory(string number, int simType);
     }
 }

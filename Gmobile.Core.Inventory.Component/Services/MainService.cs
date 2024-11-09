@@ -74,4 +74,12 @@ public class MainService : Service
         return rs;
     }
 
+    public async Task<object> GetAsync(SimDetailRequest request)
+    {
+        _logger.LogInformation($"SimDetailRequest {request.ToJson()}");
+        var rs = await _stockService.GetSimDetailInventory(request.Number, request.SimType);
+        _logger.LogInformation($"SimDetail Reponse: {rs.ToJson()}");
+        return rs;
+    }
+
 }

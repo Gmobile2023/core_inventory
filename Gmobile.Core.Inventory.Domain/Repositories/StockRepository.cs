@@ -400,5 +400,52 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
+        /// <summary>
+        /// Chi tiết của Sim/Số
+        /// </summary>
+        /// <param name="number"></param>
+        /// <param name="simType"></param>
+        /// <returns></returns>
+        public async Task<ResponseMessageBase<SimDispalyDto>> GetSimDetailInventory(string number, int simType)
+        {
+            if (simType == 2)
+                return await GetSerialDetail(number);
+            else return await GetMobileDetail(number);
+        }
+
+        private async Task<ResponseMessageBase<SimDispalyDto>> GetMobileDetail(string mobile)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var product = await data.SingleAsync<Entities.Product>(c => c.Mobile == mobile);
+                var simDto = product.ConvertTo<SimDispalyDto>();
+                _logger.LogInformation($"GetMobileDetail Mobile= {mobile} . Success ");
+                return ResponseMessageBase<SimDispalyDto>.Success(simDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error GetMobileDetail Mobile= {mobile}  Exception: {ex}");
+                return ResponseMessageBase<SimDispalyDto>.Error("Không lấy được thông tin chi tiết số !");
+            }
+        }
+
+
+        private async Task<ResponseMessageBase<SimDispalyDto>> GetSerialDetail(string serial)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var product = await data.SingleAsync<Entities.Serials>(c => c.Serial == serial);
+                var simDto = product.ConvertTo<SimDispalyDto>();
+                _logger.LogInformation($"GetSerialDetail Serial= {serial} . Success ");
+                return ResponseMessageBase<SimDispalyDto>.Success(simDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error GetSerialDetail Serial= {serial}  Exception: {ex}");
+                return ResponseMessageBase<SimDispalyDto>.Error("Không lấy được thông tin chi tiết serial !");
+            }
+        }
     }
 }

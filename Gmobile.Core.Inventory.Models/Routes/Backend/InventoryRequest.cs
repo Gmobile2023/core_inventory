@@ -154,4 +154,14 @@ namespace Gmobile.Core.Inventory.Models.Routes.Backend
         public int SkipCount { get; set; }
         public int MaxResultCount { get; set; }
     }
+
+    [Description("Chi tiết số/serial")]
+    [Tag(Name = "inventory")]
+    [Route("/api/v1/inventory/sim/{Number}", "GET")]
+    public class SimDetailRequest : IGet, IReturn<object>
+    {
+        public string Number { get; set; }
+
+        public int SimType { get; set; }
+    }
 }
