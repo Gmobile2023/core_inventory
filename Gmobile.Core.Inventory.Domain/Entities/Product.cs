@@ -20,6 +20,13 @@ namespace Gmobile.Core.Inventory.Domain.Entities
 
         [StringLength(30)] public string StockCurrentCode { get; set; }
 
+        [References(typeof(Inventory))]
+        public int StockId { get; set; }
+
+        [References(typeof(Category))]
+        public int CategorId { get; set; }
+        [StringLength(30)] public string CategorCode { get; set; }
+
         [StringLength(15)] public string Mobile { get; set; }
 
         [StringLength(15)] public string TelCo { get; set; }

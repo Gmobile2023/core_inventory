@@ -18,6 +18,8 @@ namespace Gmobile.Core.Inventory.Models.Dtos
 
         public string StockType { get; set; }
 
+        public int StockLevel { get; set; }
+
         public InventoryStatus Status { get; set; }
 
         public bool IsActive { get; set; }
@@ -48,5 +50,7 @@ namespace Gmobile.Core.Inventory.Models.Dtos
         public DateTime? ConfirmDate { get; set; }
         
         public int Quantity { get; set; }
+
+        public string Location { get; set; }
     }
 }

@@ -20,5 +20,7 @@ namespace Gmobile.Core.Inventory.Domain.Entities
         [StringLength(100)] public string AcitonName { get; set; }
 
         public int Status { get; set; }
+
+        [StringLength(250)] public string Description { get; set; }
     }
 }

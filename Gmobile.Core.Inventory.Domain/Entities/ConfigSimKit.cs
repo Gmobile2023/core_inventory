@@ -22,6 +22,13 @@ namespace Gmobile.Core.Inventory.Domain.Entities
 
         [StringLength(35)] public string Serial { get; set; }
 
+        [References(typeof(Product))]
+        public int Product { get; set; }
+
+
+        [References(typeof(Serials))]
+        public int SerialId { get; set; }
+
         public ConfigSimKitStatus Status { get; set; }
 
         [StringLength(30)] public string UserCreated { get; set; }

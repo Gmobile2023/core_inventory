@@ -25,10 +25,18 @@ namespace Gmobile.Core.Inventory.Domain.Entities
         [StringLength(30)] public string UserCreated { get; set; }
         public DateTime CreatedDate { get; set; }
 
+
+        [References(typeof(Inventory))]
+        public int? SrcStockId { get; set; }
+
+        [References(typeof(Inventory))]
+        public int? DesStockId { get; set; }
+
         [StringLength(25)] public string SrcStockCode { get; set; }
 
         [StringLength(25)] public string DesStockCode { get; set; }
 
+        [StringLength(30)] public string UserProcess { get; set; }
         public int Status { get; set; }
     }
 }

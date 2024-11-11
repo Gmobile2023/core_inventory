@@ -15,8 +15,12 @@ namespace Gmobile.Core.Inventory.Domain.Entities
     {
         [AutoIncrement][PrimaryKey] public long Id { get; set; }
 
+        [References(typeof(Inventory))]
+        public int StockId { get; set; }
         [StringLength(25)] public string StockCode { get; set; }
 
+        [References(typeof(Category))]
+        public int CategoryId { get; set; }
         [StringLength(25)] public string CategoryCode { get; set; }
 
         public int Quantity { get; set; }

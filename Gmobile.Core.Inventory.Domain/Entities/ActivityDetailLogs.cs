@@ -17,6 +17,7 @@ namespace Gmobile.Core.Inventory.Domain.Entities
 
         [StringLength(30)] public string Number { get; set; }
 
+        [References(typeof(InventoryActivityLogs))]        
         public int LogId { get; set; }
     }
 }

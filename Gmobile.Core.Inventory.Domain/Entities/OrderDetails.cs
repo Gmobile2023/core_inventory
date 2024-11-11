@@ -14,11 +14,12 @@ namespace Gmobile.Core.Inventory.Domain.Entities
     {
         [AutoIncrement][PrimaryKey] public long Id { get; set; }
 
+        [References(typeof(Order))]      
         public int OrderId { get; set; }
 
         public int Quantity { get; set; }
 
-        [StringLength(50)] public string Ranger { get; set; }
+        [StringLength(50)] public string Range { get; set; }        
 
         public decimal CostPrice { get; set; }
 

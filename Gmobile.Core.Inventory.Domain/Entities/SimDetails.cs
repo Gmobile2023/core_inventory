@@ -15,6 +15,7 @@ namespace Gmobile.Core.Inventory.Domain.Entities
     {
         [AutoIncrement][PrimaryKey] public long Id { get; set; }
 
+        [References(typeof(OrderDetails))]
         public int OrderDetailId { get; set; }
         [StringLength(30)] public string SimNumber { get; set; }
     }

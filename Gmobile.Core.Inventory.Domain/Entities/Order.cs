@@ -10,10 +10,12 @@ namespace Gmobile.Core.Inventory.Domain.Entities;
 [UniqueConstraint(nameof(ProviderCode), nameof(TransRef))]
 public class Order : AuditBase, IHasId<long>
 {
-    [AutoIncrement] [PrimaryKey] public long Id { get; set; }
+    [AutoIncrement][PrimaryKey] public long Id { get; set; }
     [StringLength(50)] public string OrderCode { get; set; }
 
     [StringLength(20)] public string OrderType { get; set; }
+
+    [StringLength(200)] public string OrderTitle { get; set; }
 
     /// <summary>
     /// 1: Đơn cho số
@@ -25,10 +27,17 @@ public class Order : AuditBase, IHasId<long>
 
     [StringLength(30)] public string DesStockCode { get; set; }
 
-    [StringLength(50)] [Index] public string TransRef { get; set; }
-    
-    [StringLength(50)] [Index] public string SaleTransCode { get; set; }
-    [StringLength(50)] [Index] public string ProviderCode { get; set; }
+
+    [References(typeof(Inventory))]
+    public int? DesStockId { get; set; }
+
+    [References(typeof(Inventory))]
+    public int? SrcStockId { get; set; }
+
+    [StringLength(50)][Index] public string TransRef { get; set; }
+
+    [StringLength(50)][Index] public string SaleTransCode { get; set; }
+    [StringLength(50)][Index] public string ProviderCode { get; set; }
     [StringLength(30)] public string UserCreated { get; set; }
 
     [StringLength(30)] public string UserConfirm { get; set; }
@@ -38,8 +47,8 @@ public class Order : AuditBase, IHasId<long>
     public DateTime CreatedDate { get; set; }
     public DateTime? ConfirmDate { get; set; }
     public DateTime? ApproveDate { get; set; }
-    [StringLength(50)] public string CategoryCode { get; set; }        
- 
+    [StringLength(50)] public string CategoryCode { get; set; }
+
     public decimal Fee { get; set; }
     public decimal Discount { get; set; }
     public decimal Tax { get; set; }

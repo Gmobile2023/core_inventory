@@ -22,10 +22,13 @@ namespace Gmobile.Core.Inventory.Domain.Entities
 
         [StringLength(30)] public string StockType { get; set; }
 
+        public int StockLevel { get; set; }
+
         public InventoryStatus Status { get; set; }
 
         public bool IsActive { get; set; }
 
+        [References(typeof(Inventory))]     
         public int? ParentStockId { get; set; }
 
         [StringLength(150)] public string TreePath { get; set; }

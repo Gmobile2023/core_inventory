@@ -13,6 +13,8 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
     {
         Task<ResponseMessageBase<PagedResultDto<InventoryDto>>> GetListInventory(StockListRequest request);
 
+        Task<ResponseMessageBase<PagedResultDto<InventorySuggestDto>>> GetSuggestInventory(StockSuggestsRequest request);
+
         Task<ResponseMessageBase<string>> CreateInventory(InventoryDto inventoryDto, List<InventoryRoleDto> roleItems);
 
         Task<ResponseMessageBase<string>> UpdateInventory(InventoryDto inventoryDto, List<InventoryRoleDto> roleItems);
@@ -21,10 +23,15 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
 
         Task<ResponseMessageBase<string>> AddSaleToInventory(int stockId, string userSale, string userCreate);
 
-        Task<ResponseMessageBase<InventoryDto>> GetDetailInventory(int stockId);
-     
+        Task<InventoryDto?> GetInventoryDetail(int stockId);
+
+        Task<InventoryDto?> GetInventoryDetail(string stockCode);
+
         Task<ResponseMessageBase<PagedResultDto<SimDispalyDto>>> GetListSimInventory(StockListSimRequest request);
 
         Task<ResponseMessageBase<SimDispalyDto>> GetSimDetailInventory(string number, int simType);
+
+        Task<ActionTypeDto?> GetActionTypeByActionType(string actionType);
+        Task<ResponseMessageBase<string>> AddLogInventoryActivitys(InventoryActivityLogDto log);
     }
 }

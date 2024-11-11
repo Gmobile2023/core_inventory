@@ -1,4 +1,5 @@
-﻿using Gmobile.Core.Inventory.Models.Const;
+﻿using Gmobile.Core.Inventory.Domain.Entities;
+using Gmobile.Core.Inventory.Models.Const;
 using Gmobile.Core.Inventory.Models.Dtos;
 using Gmobile.Core.Inventory.Models.Routes.Backend;
 using Inventory.Shared.CacheManager;
@@ -9,6 +10,7 @@ using ServiceStack.OrmLite;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -77,6 +79,10 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                 var item = await data.SelectAsync(query);
                 var total = await data.CountAsync(queryTotal);
                 var dataView = item.ConvertTo<List<InventoryDto>>();
+                dataView.ForEach(c =>
+                {
+                    c.Location = c.CityName ?? string.Empty;
+                });
                 var reponse = new PagedResultDto<InventoryDto>()
                 {
                     Items = dataView,
@@ -89,6 +95,57 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             {
                 _logger.LogError($"GetInventoryList Exception : {ex}");
                 return ResponseMessageBase<PagedResultDto<InventoryDto>>.Success();
+            }
+        }
+
+
+        /// <summary>
+        /// Danh sách kho Suggest
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<ResponseMessageBase<PagedResultDto<InventorySuggestDto>>> GetSuggestInventory(StockSuggestsRequest request)
+        {
+            try
+            {
+                using var data = await _connectionFactory.OpenAsync();
+
+                var query = data.From<Entities.Inventory>().Where(p => p.Status == InventoryStatus.Success);
+
+                if (!string.IsNullOrEmpty(request.Suggest))
+                {
+                    request.Suggest = request.Suggest.Trim();
+                    query = query.Where(c => c.StockName.Contains(request.Suggest) || c.StockCode.Contains(request.Suggest));
+                }
+
+                if (request.StockLevel > 0)
+                {
+                    query = query.Where(c => c.StockLevel == request.StockLevel);
+                }
+
+                if (request.ParentIdStock > 0)
+                {
+                    query = query.Where(c => c.ParentStockId == request.ParentIdStock);
+                }
+
+                var queryTotal = query;
+                query = query.OrderByDescending(c => c.CreatedDate).Skip(request.SkipCount).Take(request.MaxResultCount);
+
+                var item = await data.SelectAsync(query);
+                var total = await data.CountAsync(queryTotal);
+                var dataView = item.ConvertTo<List<InventorySuggestDto>>();
+                var reponse = new PagedResultDto<InventorySuggestDto>()
+                {
+                    Items = dataView,
+                    TotalCount = total,
+                };
+
+                return ResponseMessageBase<PagedResultDto<InventorySuggestDto>>.Success(reponse);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"GetSuggestInventory Exception : {ex}");
+                return ResponseMessageBase<PagedResultDto<InventorySuggestDto>>.Success();
             }
         }
 
@@ -270,7 +327,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
         /// </summary>
         /// <param name="stockId"></param>
         /// <returns></returns>
-        public async Task<ResponseMessageBase<InventoryDto>> GetDetailInventory(int stockId)
+        public async Task<InventoryDto?> GetInventoryDetail(int stockId)
         {
             using var data = await _connectionFactory.OpenAsync();
             try
@@ -278,12 +335,34 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                 var inventory = await data.SingleByIdAsync<Entities.Inventory>(stockId);
                 var inventoryDto = inventory.ConvertTo<InventoryDto>();
                 _logger.LogInformation($"GetDetailInventory StockId= {stockId} . Success ");
-                return ResponseMessageBase<InventoryDto>.Success(inventoryDto);
+                return inventoryDto;
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error GetDetailInventory StockId= {stockId}  Exception: {ex}");
-                return ResponseMessageBase<InventoryDto>.Error("Không lấy được thông tin chi tiết của kho !");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Lấy chi tiết kho
+        /// </summary>
+        /// <param name="stockCode"></param>
+        /// <returns></returns>
+        public async Task<InventoryDto?> GetInventoryDetail(string stockCode)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var inventory = await data.SingleAsync<Entities.Inventory>(c => c.StockCode == stockCode);
+                var inventoryDto = inventory.ConvertTo<InventoryDto>();
+                _logger.LogInformation($"GetDetailInventory stockCode= {stockCode} . Success ");
+                return inventoryDto;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error GetDetailInventory stockCode= {stockCode}  Exception: {ex}");
+                return null;
             }
         }
 
@@ -430,7 +509,6 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
-
         private async Task<ResponseMessageBase<SimDispalyDto>> GetSerialDetail(string serial)
         {
             using var data = await _connectionFactory.OpenAsync();
@@ -445,6 +523,38 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             {
                 _logger.LogError($"Error GetSerialDetail Serial= {serial}  Exception: {ex}");
                 return ResponseMessageBase<SimDispalyDto>.Error("Không lấy được thông tin chi tiết serial !");
+            }
+        }
+
+        public async Task<ActionTypeDto?> GetActionTypeByActionType(string actionType)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var action = await data.SingleAsync<Entities.ActionTypes>(c => c.AcitonType == actionType && c.Status == 1);
+                if (action == null) return null;
+                return action.ConvertTo<ActionTypeDto>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error GetActionTypeByActionType: actionType= {actionType}  Exception: {ex}");
+                return null;
+            }
+        }
+
+        public async Task<ResponseMessageBase<string>> AddLogInventoryActivitys(InventoryActivityLogDto log)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                await data.InsertAsync(log.ConvertTo<InventoryActivityLogs>());
+                _logger.LogInformation($"{log.OrderCode} AddLogInventoryActivitys. Success ");
+                return ResponseMessageBase<string>.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error AddLogInventoryActivitys: {log.OrderCode}  Exception: {ex}");
+                return ResponseMessageBase<string>.Error();
             }
         }
     }

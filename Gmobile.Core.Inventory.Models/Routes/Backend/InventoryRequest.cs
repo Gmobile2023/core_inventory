@@ -34,6 +34,19 @@ namespace Gmobile.Core.Inventory.Models.Routes.Backend
         public int MaxResultCount { get; set; }
     }
 
+
+    [Tag(Name = "inventory")]
+    [Route("/api/v1/inventory/stocks/suggests", "GET")]
+    public class StockSuggestsRequest : IGet, IReturn<object>
+    {
+        public string Suggest { get; set; }
+        public int StockLevel { get; set; }
+        public int? ParentIdStock { get; set; }
+        public int SkipCount { get; set; }
+        public int MaxResultCount { get; set; }
+    }
+
+
     [Description("Hàm tạo kho")]
     [Tag(Name = "inventory")]
     [Route("/api/v1/inventory/stock", "POST")]
@@ -44,6 +57,8 @@ namespace Gmobile.Core.Inventory.Models.Routes.Backend
         public string StockName { get; set; }
 
         public string StockType { get; set; }
+
+        public int StockLevel { get; set; }
 
         public int? CityId { get; set; }
 
@@ -93,6 +108,8 @@ namespace Gmobile.Core.Inventory.Models.Routes.Backend
         public string Address { get; set; }
 
         public List<AccountRoleType> RoleTypes { get; set; }
+
+        public string UserCreated { get; set; }
     }
 
     [Description("Kích hoạt kho")]
@@ -111,7 +128,6 @@ namespace Gmobile.Core.Inventory.Models.Routes.Backend
     {
         public int Id { get; set; }
         public string UserSale { get; set; }
-
         public string UserCreate { get; set; }
     }
 
@@ -120,7 +136,7 @@ namespace Gmobile.Core.Inventory.Models.Routes.Backend
     [Route("/api/v1/inventory/stock/{Id}", "GET")]
     public class StockDetailRequest : IGet, IReturn<object>
     {
-        public int Id { get; set; }        
+        public int Id { get; set; }
     }
 
     public class AccountRoleType
@@ -136,7 +152,7 @@ namespace Gmobile.Core.Inventory.Models.Routes.Backend
     [Route("/api/v1/inventory/sim/list", "GET")]
     public class StockListSimRequest : IReturn<object>
     {
-        public string StockCode { get; set; }     
+        public string StockCode { get; set; }
 
         public int SimType { get; set; }
 

@@ -10,18 +10,29 @@ public class MainService : Service
 {
     private readonly ILogger<MainService> _logger;
     private readonly IStockService _stockService;
+    private readonly IOrderService _orderService;
+    
 
 
-    public MainService(IStockService stockService, ILogger<MainService> logger)
+    public MainService(IStockService stockService, IOrderService orderService, ILogger<MainService> logger)
     {
         _stockService = stockService;
+        _orderService = orderService;
         _logger = logger;
     }
 
+    #region 1.Phần kho
     public async Task<object> GetAsync(StockListRequest request)
     {
         _logger.LogInformation($"StockListRequest {request.ToJson()}");
         var rs = await _stockService.GetListInventory(request);
+        return rs;
+    }
+
+    public async Task<object> GetAsync(StockSuggestsRequest request)
+    {
+        _logger.LogInformation($"StockSuggestsRequest {request.ToJson()}");
+        var rs = await _stockService.GetSuggestsInventory(request);
         return rs;
     }
 
@@ -57,7 +68,6 @@ public class MainService : Service
         return rs;
     }
 
-
     public async Task<object> GetAsync(StockDetailRequest request)
     {
         _logger.LogInformation($"StockDetailRequest {request.ToJson()}");
@@ -81,5 +91,36 @@ public class MainService : Service
         _logger.LogInformation($"SimDetail Reponse: {rs.ToJson()}");
         return rs;
     }
+
+
+    #endregion
+
+    #region 2.Phần đơn hàng
+
+    /// <summary>
+    /// Danh sách đơn hàng
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    public async Task<object> GetAsync(OrderListRequest request)
+    {
+        _logger.LogInformation($"OrderListRequest {request.ToJson()}");
+        var rs = await _orderService.GetListOrder(request);
+        return rs;
+    }
+
+    /// <summary>
+    /// Tạo đơn hàng
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    public async Task<object> PostAsync(OrderCreatedRequest request)
+    {
+        _logger.LogInformation($"OrderCreatedRequest {request.ToJson()}");
+        var rs = await _orderService.OrderCreate(request);
+        return rs;
+    }
+
+    #endregion
 
 }

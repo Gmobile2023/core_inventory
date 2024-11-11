@@ -2,6 +2,7 @@
 using Gmobile.Core.Inventory.Models.Const;
 using Gmobile.Core.Inventory.Models.Dtos;
 using Gmobile.Core.Inventory.Models.Routes.Backend;
+using Inventory.Shared.Const;
 using Inventory.Shared.Dtos.CommonDto;
 using ServiceStack;
 using System;
@@ -19,9 +20,25 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
         {
             _stockRepository = stockRepository;
         }
+
+        /// <summary>
+        /// Danh sách kho hiển thị Grid
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public async Task<ResponseMessageBase<PagedResultDto<InventoryDto>>> GetListInventory(StockListRequest request)
         {
             return await _stockRepository.GetListInventory(request);
+        }
+
+        /// <summary>
+        /// Danh sách kho Suggests
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<ResponseMessageBase<PagedResultDto<InventorySuggestDto>>> GetSuggestsInventory(StockSuggestsRequest request)
+        {
+            return await _stockRepository.GetSuggestInventory(request);
         }
 
         /// <summary>
@@ -43,26 +60,52 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
             request.UserCreated = (request.UserCreated ?? string.Empty).Trim();
 
             if (string.IsNullOrEmpty(request.StockName))
-                return ResponseMessageBase<string>.Error(MessagerErrorCode.EmptyName, "Tên kho không được để trống");
+                return ResponseMessageBase<string>.Error(ResponseCodeConst.EmptyName, "Tên kho không được để trống");
 
             if (string.IsNullOrEmpty(request.StockType))
-                return ResponseMessageBase<string>.Error(MessagerErrorCode.EmptyLevel, "Cấp kho không được để trống");
+                return ResponseMessageBase<string>.Error(ResponseCodeConst.EmptyLevel, "Cấp kho không được để trống");
 
 
             if (string.IsNullOrEmpty(request.UserCreated))
-                return ResponseMessageBase<string>.Error(MessagerErrorCode.EmptyLevel, "Người tạo kho không được để trống");
+                return ResponseMessageBase<string>.Error(ResponseCodeConst.EmptyLevel, "Người tạo kho không được để trống");
+
+            if (request.StockLevel > 1)
+            {
+                if (request.ParentId <= 0)
+                    return ResponseMessageBase<string>.Error(ResponseCodeConst.EmptyLevel, "Quý khách chưa truyền kho cha.");
+            }
 
             if (request.RoleTypes == null || request.RoleTypes.Count <= 0)
-                return ResponseMessageBase<string>.Error(MessagerErrorCode.ExportRecover, "Chứa truyền người xuất và thu hồi");
+                return ResponseMessageBase<string>.Error(ResponseCodeConst.ExportRecover, "Chứa truyền người xuất và thu hồi");
 
             #endregion
 
             ///Xử lý thêm phần mã kho??
             var inventoryDto = request.ConvertTo<InventoryDto>();
+            if (inventoryDto.ParentStockId > 0)
+            {
+                var parentStock = await _stockRepository.GetInventoryDetail(inventoryDto.ParentStockId ?? 0);
+                if (parentStock == null)
+                {
+                    return ResponseMessageBase<string>.Error("Kiểm tra lại thông tin kho cha.");
+                }
+                inventoryDto.TreePath = parentStock.StockCode + "-" + inventoryDto.StockCode;
+            }
+            else inventoryDto.TreePath = inventoryDto.StockCode;
+
             inventoryDto.CreatedDate = DateTime.Now;
             var roleItems = request.RoleTypes.ConvertTo<List<InventoryRoleDto>>();
 
-            return await _stockRepository.CreateInventory(inventoryDto, roleItems);
+            var reponse = await _stockRepository.CreateInventory(inventoryDto, roleItems);
+            if (reponse.ResponseStatus.ErrorCode == ResponseCodeConst.Success)
+                await ActivitysLog(new ActivityLogTypeDto()
+                {
+                    ActionType = ActivityLogTypeValue.CreateStock,
+                    StockLevel = inventoryDto.StockType,
+                    DesStockName = request.StockName,
+                    UserProcess = request.UserCreated,
+                });
+            return reponse;
         }
 
         /// <summary>
@@ -82,22 +125,33 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
             request.Address = (request.Address ?? string.Empty).Trim();
 
             if (string.IsNullOrEmpty(request.StockName))
-                return ResponseMessageBase<string>.Error(MessagerErrorCode.EmptyName, "Tên kho không được để trống");
+                return ResponseMessageBase<string>.Error(ResponseCodeConst.EmptyName, "Tên kho không được để trống");
 
             if (string.IsNullOrEmpty(request.StockType))
-                return ResponseMessageBase<string>.Error(MessagerErrorCode.EmptyLevel, "Cấp kho không được để trống");
+                return ResponseMessageBase<string>.Error(ResponseCodeConst.EmptyLevel, "Cấp kho không được để trống");
 
             if (request.RoleTypes == null || request.RoleTypes.Count <= 0)
-                return ResponseMessageBase<string>.Error(MessagerErrorCode.ExportRecover, "Chứa truyền người xuất và thu hồi");
+                return ResponseMessageBase<string>.Error(ResponseCodeConst.ExportRecover, "Chứa truyền người xuất và thu hồi");
 
             #endregion
 
             ///Xử lý thêm phần mã kho??
             var inventoryDto = request.ConvertTo<InventoryDto>();
             inventoryDto.CreatedDate = DateTime.Now;
+            inventoryDto.UserConfirm = request.UserCreated;
             var roleItems = request.RoleTypes.ConvertTo<List<InventoryRoleDto>>();
 
-            return await _stockRepository.UpdateInventory(inventoryDto, roleItems);
+            var reponse = await _stockRepository.UpdateInventory(inventoryDto, roleItems);
+            if (reponse.ResponseStatus.ErrorCode == ResponseCodeConst.Success)
+                await ActivitysLog(new ActivityLogTypeDto()
+                {
+                    ActionType = ActivityLogTypeValue.EditStock,
+                    StockLevel = inventoryDto.StockType,
+                    DesStockName = request.StockName,
+                    UserProcess = request.UserCreated,
+                });
+
+            return reponse;
         }
 
         /// <summary>
@@ -117,8 +171,24 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 return ResponseMessageBase<string>.Error("User thực hiện kích hoạt không được để trống");
 
             #endregion
+            var inventoryDto = await _stockRepository.GetInventoryDetail(request.Id);
+            if (inventoryDto == null)
+            {
+                return ResponseMessageBase<string>.Error("Kiểm tra lại thông tin kho.");
+            }
 
-            return await _stockRepository.ActiveInventory(request.Id, request.UserActive);
+            var reponse = await _stockRepository.ActiveInventory(request.Id, request.UserActive);
+            if (reponse.ResponseStatus.ErrorCode == ResponseCodeConst.Success)
+                await ActivitysLog(new ActivityLogTypeDto()
+                {
+                    ActionType = ActivityLogTypeValue.ActiveStock,
+                    StockLevel = inventoryDto.StockLevel.ToString(),
+                    DesStockName = inventoryDto.StockName,
+                    UserProcess = request.UserActive,
+                });
+
+            return reponse;
+
         }
 
         /// <summary>
@@ -143,7 +213,24 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
 
             #endregion
 
-            return await _stockRepository.AddSaleToInventory(request.Id, request.UserSale, request.UserCreate);
+            var inventoryDto = await _stockRepository.GetInventoryDetail(request.Id);
+            if (inventoryDto == null)
+            {
+                return ResponseMessageBase<string>.Error("Kiểm tra lại thông tin kho.");
+            }
+
+            var reponse = await _stockRepository.AddSaleToInventory(request.Id, request.UserSale, request.UserCreate);
+            if (reponse.ResponseStatus.ErrorCode == ResponseCodeConst.Success)
+                await ActivitysLog(new ActivityLogTypeDto()
+                {
+                    ActionType = ActivityLogTypeValue.AccountToStock,
+                    StockLevel = inventoryDto.StockLevel.ToString(),
+                    DesStockName = inventoryDto.StockName,
+                    UserProcess = request.UserCreate,
+                });
+
+            return reponse;
+
         }
 
         /// <summary>
@@ -151,16 +238,17 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
         /// </summary>
         /// <param name="stockId"></param>
         /// <returns></returns>
-        public async Task<ResponseMessageBase<InventoryDto>> GetDetailInventory(int stockId)
+        public async Task<ResponseMessageBase<InventoryDto?>> GetDetailInventory(int stockId)
         {
             #region 1.Validate
 
             if (stockId <= 0)
-                return ResponseMessageBase<InventoryDto>.Error("Quý khách chưa truyền Id của kho");
+                return ResponseMessageBase<InventoryDto?>.Error("Quý khách chưa truyền Id của kho");
 
             #endregion
 
-            return await _stockRepository.GetDetailInventory(stockId);
+            var inventoryDto = await _stockRepository.GetInventoryDetail(stockId);
+            return ResponseMessageBase<InventoryDto?>.Success(inventoryDto);
         }
 
         /// <summary>
@@ -192,6 +280,30 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
             #endregion
 
             return await _stockRepository.GetSimDetailInventory(number, simType);
+        }
+
+        /// <summary>
+        /// Xử lý ghi lịch sử chung cả các dịch vụ
+        /// </summary>
+        /// <param name="activityLog"></param>
+        /// <returns></returns>
+        private async Task<ResponseMessageBase<string>> ActivitysLog(ActivityLogTypeDto activityLog)
+        {
+            #region 1.Validate
+
+            var logDto = activityLog.ConvertTo<InventoryActivityLogDto>();
+            var actionTypeDto = await _stockRepository.GetActionTypeByActionType(activityLog.ActionType);
+            if (actionTypeDto != null)
+            {
+                logDto.Content = string.Format(actionTypeDto.Description, activityLog.OrderCode, activityLog.SrcStockName, activityLog.DesStockName);
+            }
+
+            logDto.CreatedDate = DateTime.Now;
+            logDto.Status = 1;
+
+            #endregion
+
+            return await _stockRepository.AddLogInventoryActivitys(logDto);
         }
     }
 }
