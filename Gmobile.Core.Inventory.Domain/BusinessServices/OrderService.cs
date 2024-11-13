@@ -50,7 +50,6 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 return ResponseMessageBase<OrderMessage>.Error("Quý khách chưa truyền mã kho");
             }
 
-
             request.CategoryCode = (request.CategoryCode ?? string.Empty).Trim();
             if (string.IsNullOrEmpty(request.CategoryCode))
             {
@@ -125,7 +124,9 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
             if (messagerOrder.ResponseStatus.ErrorCode == ResponseCodeConst.Success)
                 await _stockRepository.ActivitysLog(new ActivityLogTypeDto()
                 {
-                    ActionType = ActivityLogTypeValue.CreateSerial,
+                    ActionType = request.SimType == OrderSimType.Serial 
+                    ? ActivityLogTypeValue.CreateSerial 
+                    : ActivityLogTypeValue.CreateMobile,
                     StockLevel = inventoryDto.StockType,
                     DesStockName = inventoryDto.StockName,
                     DesStockCode = inventoryDto.StockCode,
@@ -181,7 +182,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 return ResponseMessageBase<OrderMessage>.Error("Đơn hàng đã được xác nhận.");
             }
 
-           
+
 
             #endregion
 
@@ -451,8 +452,8 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                                           SalePrice = details.SalePrice,
                                           StockCurrentCode = orderDto.DesStockCode,
                                           UserCreated = orderDto.UserCreated,
-                                          TelCo = details.TelCo,                                         
-                                          SouceTransCode= orderDto.OrderCode,
+                                          TelCo = details.TelCo,
+                                          SouceTransCode = orderDto.OrderCode,
                                           TreePath = stockDto != null ? stockDto.TreePath : string.Empty,
                                           Serial = string.Empty,
                                           KitingStatus = 0,

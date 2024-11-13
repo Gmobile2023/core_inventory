@@ -41,6 +41,8 @@ namespace Gmobile.Core.Inventory.Domain.Entities
 
         public string Serial { get; set; }
 
+        [StringLength(15)] public string Package { get; set; }
+
         [StringLength(50)] public string TransCode { get; set; }
 
         public decimal CostPrice { get; set; }

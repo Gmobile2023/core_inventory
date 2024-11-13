@@ -1,4 +1,5 @@
-﻿using Gmobile.Core.Inventory.Domain.Repositories;
+﻿using Gmobile.Core.Inventory.Domain.Entities;
+using Gmobile.Core.Inventory.Domain.Repositories;
 using Gmobile.Core.Inventory.Models.Const;
 using Gmobile.Core.Inventory.Models.Dtos;
 using Gmobile.Core.Inventory.Models.Routes.Backend;
@@ -6,6 +7,7 @@ using Inventory.Shared.Const;
 using Inventory.Shared.Dtos.CommonDto;
 using Microsoft.Extensions.Logging;
 using ServiceStack;
+using ServiceStack.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -283,6 +285,81 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
             #endregion
 
             return await _stockRepository.GetSimDetailInventory(number, simType);
+        }
+
+        /// <summary>
+        /// Kitting số sim
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        public async Task<ResponseMessageBase<string>> KitingInventory(KitingDto dto)
+        {
+            #region 1.Validate
+
+            if (dto.StockId <= 0)
+                return ResponseMessageBase<string>.Error("Quý khách kiêm tra lại thông tin kho.");
+
+            if (dto.Items == null || dto.Items.Count <= 0)
+                return ResponseMessageBase<string>.Error("Danh sách không có số để thực hiện");
+
+            var stockDto = await _stockRepository.GetInventoryDetail(dto.StockId);
+
+            if (stockDto == null)
+                return ResponseMessageBase<string>.Error("Không tìm thấy kho. Quý khách kiểm tra lại thông tin.");
+
+            #endregion
+
+            var kitLog = await _stockRepository.CreateKitingLog(new KitingLog()
+            {
+                KitingType = dto.Type,
+                StockId = dto.StockId,
+                Status = 1,
+                UserCreated = dto.UserCreated,
+                CreatedDate = DateTime.Now,
+                Quantity = dto.Items.Count()
+            });
+            return await KitingToMobile(stockDto, kitLog, dto, 5000);
+        }
+
+        private async Task<ResponseMessageBase<string>> KitingToMobile(InventoryDto? stockDto, KitingLog kitlog, KitingDto dto, int taskCount)
+        {
+            int totalCurrent = 0;
+            try
+            {
+                var dataRanger = dto.Items;
+                var lt = dataRanger.Take(taskCount).ToList();
+                var tmpKit = lt.Select(c => c.Mobile).ToList();
+                dataRanger.RemoveAll(c => tmpKit.Contains(c.Mobile));
+                int scanInt = 0;
+                while (lt.Count > 0)
+                {
+                    _logger.LogInformation($"AddKitingToMobile_Step: {scanInt} - StockId= {dto.StockId} - kitingType= {dto.Type} - run_row = {lt.Count}");
+                    var arrays = (from x in lt
+                                  select new KitingLogDetails
+                                  {
+                                      Mobile = x.Mobile,
+                                      Package = x.Package,
+                                      Serial = x.Serial,
+                                      KitingId = (int)kitlog.Id,
+                                      CreatedDate = DateTime.Now,
+                                  }).ToList();
+
+                    totalCurrent = totalCurrent + await _stockRepository.SyncKitingToMobile(kitlog.StockId, kitlog.KitingType, arrays);
+                    lt = dataRanger.Take(taskCount).ToList();
+                    tmpKit = lt.Select(c => c.Mobile).ToList();
+                    dataRanger.RemoveAll(c => tmpKit.Contains(c.Mobile));
+                    scanInt = scanInt + 1;
+                }
+
+                kitlog.QuantityCurrent = totalCurrent;
+                await _stockRepository.UpdateKitingLog(kitlog);
+                return ResponseMessageBase<string>.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"AddKitingToMobile => StockId= {dto.StockId} - kitingType= {dto.Type} Exception: {ex}");
+                return ResponseMessageBase<string>.Error();
+            }
         }
     }
 }

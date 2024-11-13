@@ -1,8 +1,12 @@
 ﻿
 using Gmobile.Core.Inventory.Domain.BusinessServices;
 using Gmobile.Core.Inventory.Models.Routes.Backend;
+using Inventory.Shared.Dtos.CommonDto;
 using Microsoft.Extensions.Logging;
 using ServiceStack;
+using System.Collections;
+using System.IO;
+using System.Text;
 
 namespace Gmobile.Core.Inventory.Component.Services;
 
@@ -11,13 +15,14 @@ public class MainService : Service
     private readonly ILogger<MainService> _logger;
     private readonly IStockService _stockService;
     private readonly IOrderService _orderService;
-    
+    private readonly IFileService _fileService;
 
 
-    public MainService(IStockService stockService, IOrderService orderService, ILogger<MainService> logger)
+    public MainService(IStockService stockService, IOrderService orderService, IFileService fileService, ILogger<MainService> logger)
     {
         _stockService = stockService;
         _orderService = orderService;
+        _fileService = fileService;
         _logger = logger;
     }
 
@@ -131,6 +136,47 @@ public class MainService : Service
         _logger.LogInformation($"OrderConfirmRequest {request.ToJson()}");
         var rs = await _orderService.ConfirmOrder(request);
         return rs;
+    }
+
+    public async Task<object> PostAsync(StockKitingRequest request)
+    {
+        _logger.LogInformation($"StockKitingRequest {request.ToJson()}");
+
+        try
+        {
+            //Xử lý thêm phần đọc file nữa  
+            var file = Request.Files.FirstOrDefault();
+            if (file != null)
+            {
+                var items = new List<Models.Dtos.KitingItem>();
+                using (var binaryReader = new BinaryReader(file.InputStream))
+                {
+                    var fileData = binaryReader.ReadBytes((int)file.ContentLength);
+                    Stream stream = new MemoryStream(fileData);
+                    items = await _fileService.ReadFileXls(stream);
+                }
+
+                var rs = await _stockService.KitingInventory(new Models.Dtos.KitingDto()
+                {
+                    StockId = request.StockId,
+                    UserCreated = request.UserCreated,
+                    Type = request.KitingType,
+                    Items = items
+                });
+                return rs;
+            }
+            else
+            {
+                _logger.LogInformation($"StockKitingRequest Khong co file du lieu.");
+                return ResponseMessageBase<string>.Error("Quý khách chưa upload file dữ liệu.");
+            }
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"StockKitingRequest Exception: {ex}");
+            return ResponseMessageBase<string>.Error("Quý khách chưa upload file dữ liệu.");
+        }
     }
 
     #endregion

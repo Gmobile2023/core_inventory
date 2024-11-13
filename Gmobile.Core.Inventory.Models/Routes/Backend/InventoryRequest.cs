@@ -35,6 +35,7 @@ namespace Gmobile.Core.Inventory.Models.Routes.Backend
     }
 
 
+    [Description("Danh sách kho phục vụ loadDroplist")]
     [Tag(Name = "inventory")]
     [Route("/api/v1/inventory/stocks/suggests", "GET")]
     public class StockSuggestsRequest : IGet, IReturn<object>
@@ -114,7 +115,7 @@ namespace Gmobile.Core.Inventory.Models.Routes.Backend
 
     [Description("Kích hoạt kho")]
     [Tag(Name = "inventory")]
-    [Route("/api/v1/inventory/stock/acive", "POST")]
+    [Route("/api/v1/inventory/stock/active", "POST")]
     public class StockActiveRequest : IPost, IReturn<object>
     {
         public int Id { get; set; }
@@ -180,4 +181,16 @@ namespace Gmobile.Core.Inventory.Models.Routes.Backend
 
         public int SimType { get; set; }
     }
+
+
+    [Description("Tạo yêu cầu Kitting số/serial")]
+    [Tag(Name = "inventory")]
+    [Route("/api/v1/inventory/kitting", "POST")]
+    public class StockKitingRequest : IPost, IReturn<object>
+    {
+        public int StockId { get; set; }
+
+        public string UserCreated { get; set; }
+        public KitingType KitingType { get; set; }
+    }   
 }

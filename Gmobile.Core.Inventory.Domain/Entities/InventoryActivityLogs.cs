@@ -20,7 +20,7 @@ namespace Gmobile.Core.Inventory.Domain.Entities
 
         [StringLength(30)] public string ActionType { get; set; }
 
-        [StringLength(200)] public string Content { get; set; }
+        [StringLength(200)] public string Description { get; set; }
 
         [StringLength(30)] public string UserCreated { get; set; }
         public DateTime CreatedDate { get; set; }

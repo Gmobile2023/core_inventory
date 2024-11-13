@@ -1,4 +1,6 @@
-﻿using Gmobile.Core.Inventory.Models.Dtos;
+﻿using Gmobile.Core.Inventory.Domain.Entities;
+using Gmobile.Core.Inventory.Models.Const;
+using Gmobile.Core.Inventory.Models.Dtos;
 using Gmobile.Core.Inventory.Models.Routes.Backend;
 using Inventory.Shared.Dtos.CommonDto;
 using System;
@@ -33,5 +35,11 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
 
         Task<CategoryDto?> GetCategoryDetail(string categoryCode);
         Task<ResponseMessageBase<string>> ActivitysLog(ActivityLogTypeDto activityLog);
+
+        Task<KitingLog> CreateKitingLog(KitingLog kitingDto);
+
+        Task<bool> UpdateKitingLog(KitingLog kitingDto);
+
+        Task<int> SyncKitingToMobile(int stockId, KitingType kitType, List<KitingLogDetails> details);
     }
 }

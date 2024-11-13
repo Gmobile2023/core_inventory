@@ -2,12 +2,14 @@
 using ServiceStack;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Gmobile.Core.Inventory.Models.Routes.Backend
 {
+    [Description("Danh sách đơn hàng")]
     [Tag(Name = "Order")]
     [Route("/api/v1/Stock/Orders", "GET")]
     public class OrderListRequest : IGet, IReturn<object>
@@ -30,6 +32,7 @@ namespace Gmobile.Core.Inventory.Models.Routes.Backend
     }
 
 
+    [Description("Tạo đơn hàng")]
     [Tag(Name = "Order")]
     [Route("/api/v1/Stock/Order", "POST")]
     public class OrderCreatedRequest : IPost, IReturn<object>
@@ -50,6 +53,8 @@ namespace Gmobile.Core.Inventory.Models.Routes.Backend
 
     }
 
+
+    [Description("Xác nhận đơn hàng")]
     [Tag(Name = "Order")]
     [Route("/api/v1/Stock/Order", "PUT")]
     public class OrderConfirmRequest : IPut, IReturn<object>

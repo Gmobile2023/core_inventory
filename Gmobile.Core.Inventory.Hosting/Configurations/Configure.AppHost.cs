@@ -32,6 +32,8 @@ public class AppHost() : AppHostBase("gmobile_inventory", typeof(MainService).As
                // services.AddScoped<ITransCodeGenerator, TransCodeGenerator>();
                 services.AddScoped<IStockService, StockService>();
                 services.AddScoped<IOrderService, OrderService>();
+                services.AddScoped<IFileService, FileService>();
+                
             })
             .ConfigureAppHost(appHost => { })
             .Configure((context, app) =>

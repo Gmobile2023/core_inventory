@@ -582,7 +582,6 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
         }
 
 
-
         /// <summary>
         /// Xử lý ghi lịch sử chung cả các dịch vụ
         /// </summary>
@@ -592,7 +591,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
         {
             #region 1.Validate
 
-            var logDto = activityLog.ConvertTo<InventoryActivityLogDto>();                      
+            var logDto = activityLog.ConvertTo<InventoryActivityLogDto>();
             var actionTypeDto = await GetActionTypeByActionType(activityLog.ActionType);
             if (actionTypeDto != null)
             {
@@ -606,5 +605,81 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
 
             return await AddLogInventoryActivitys(logDto);
         }
+
+
+        public async Task<bool> UpdateKitingLog(KitingLog kitingDto)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                await data.UpdateAsync(kitingDto);
+                _logger.LogInformation($"UpdateKitingLog {kitingDto.ToJson()}. Success ");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error UpdateKitingLog {kitingDto.ToJson()} Exception: {ex}");
+                return false;
+            }
+        }
+
+        public async Task<KitingLog> CreateKitingLog(KitingLog kitingDto)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                kitingDto.Id = await data.InsertAsync(kitingDto, true);
+                _logger.LogInformation($"CreateKitingLog {kitingDto.ToJson()}. Success ");
+                return kitingDto;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error CreateKitingLog {kitingDto.ToJson()} Exception: {ex}");
+                return null;
+            }
+        }
+
+
+        public async Task<int> SyncKitingToMobile(int stockId, KitingType kitType, List<KitingLogDetails> details)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var mobiles = details.Select(c => c.Mobile).ToList();
+                var mobileDetails = await data.SelectAsync<Entities.Product>(c => mobiles.Contains(c.Mobile) && c.Status == ProductStatus.Success);
+                mobileDetails.ForEach(c =>
+                {
+                    var d = details.FirstOrDefault(x => x.Mobile == c.Mobile);
+                    if (d != null)
+                    {
+                        if (kitType == KitingType.Kiting)
+                        {
+                            c.Serial = d.Serial;
+                            c.Package = d.Package;
+                            c.KitingStatus = 1;
+                        }
+                        else
+                        {
+                            c.Serial = string.Empty;
+                            c.Package = string.Empty;
+                            c.KitingStatus = 0;
+                        }
+                    }
+                });
+
+                await data.UpdateAllAsync(mobileDetails);
+                await data.InsertAllAsync(details);
+                //Xử lý thêm insert log
+
+                _logger.LogInformation($"SyncKitingToMobile stockId= {stockId} - Total= {details.Count} . Success ");
+                return mobileDetails.Count();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error SyncKitingToMobile stockId= {stockId} - Total= {details.Count}  Exception: {ex}");
+                return 0;
+            }
+        }
+
     }
 }

@@ -29,8 +29,7 @@ public class ConfigureDb : IHostingStartup
             db.CreateTableIfNotExists<Domain.Entities.InventoryType>();
             db.CreateTableIfNotExists<Domain.Entities.InventoryAvailable>();
             db.CreateTableIfNotExists<Domain.Entities.Product>();
-            db.CreateTableIfNotExists<Domain.Entities.Serials>();
-            db.CreateTableIfNotExists<Domain.Entities.ConfigSimKit>();
+            db.CreateTableIfNotExists<Domain.Entities.Serials>();            
             db.CreateTableIfNotExists<Domain.Entities.OrderTypes>();
             db.CreateTableIfNotExists<Domain.Entities.Order>();
             db.CreateTableIfNotExists<Domain.Entities.OrderDetails>();
@@ -41,6 +40,8 @@ public class ConfigureDb : IHostingStartup
             db.CreateTableIfNotExists<Domain.Entities.ActivityDetailLogs>();
             db.CreateTableIfNotExists<Domain.Entities.InventorySettings>();
             db.CreateTableIfNotExists<Domain.Entities.InventoryRoles>();
+            db.CreateTableIfNotExists<Domain.Entities.KitingLog>();
+            db.CreateTableIfNotExists<Domain.Entities.KitingLogDetails>();
 
 
             OrmLiteConfig.DialectProvider.GetStringConverter().UseUnicode = true;
