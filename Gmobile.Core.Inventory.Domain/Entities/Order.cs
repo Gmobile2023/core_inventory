@@ -13,15 +13,16 @@ public class Order : AuditBase, IHasId<long>
     [AutoIncrement][PrimaryKey] public long Id { get; set; }
     [StringLength(50)] public string OrderCode { get; set; }
 
-    [StringLength(20)] public string OrderType { get; set; }
+    public OrderValueType OrderType { get; set; }
 
     [StringLength(200)] public string OrderTitle { get; set; }
 
     /// <summary>
     /// 1: Đơn cho số
-    /// 2: Đơn cho sim
+    /// 2: Đơn cho gsim
+    /// 3: Serial
     /// </summary>
-    public int SimType { get; set; }
+    public OrderSimType SimType { get; set; }
 
     [StringLength(30)] public string SrcStockCode { get; set; }
 
@@ -46,18 +47,16 @@ public class Order : AuditBase, IHasId<long>
 
     public DateTime CreatedDate { get; set; }
     public DateTime? ConfirmDate { get; set; }
-    public DateTime? ApproveDate { get; set; }
-    [StringLength(50)] public string CategoryCode { get; set; }
-
+    public DateTime? ApproveDate { get; set; }  
     public decimal Fee { get; set; }
     public decimal Discount { get; set; }
     public decimal Tax { get; set; }
     public int Quantity { get; set; }
+    public int QuantityCurrent { get; set; }
     public decimal CostPrice { get; set; }
     public decimal SalePrice { get; set; }
     public OrderStatus Status { get; set; }
-    public decimal PaymentAmount { get; set; }
-    public DateTime? PaymentDate { get; set; }
+    
     [StringLength(5000)] public string Description { get; set; }
     [StringLength(5000)] public string Document { get; set; }
 }

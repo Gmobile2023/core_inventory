@@ -6,11 +6,27 @@ using System.Threading.Tasks;
 
 namespace Gmobile.Core.Inventory.Models.Const
 {
-    public class OrderValueType
+    public enum OrderValueType : byte
     {
-        public const string Import = "Import";//Nhập mới
-        public const string Transfer = "Transfer";//Điều chuyển
-        public const string Recovery = "Recovery";//Đơn thu hồi
-        public const string Sale = "Sale";//Đơn bán hàng
+        Import = 1,//Nhập mới
+        Transfer = 2,//Điều chuyển
+        Recovery = 3,//Đơn thu hồi
+        Sale = 5//Đơn bán hàng
+    }
+
+    public enum OrderSimType : byte
+    {
+        Physic = 1,
+        GSim = 2,
+        Serial = 3,
+    }
+
+    public enum OrderAttributeType : byte
+    {
+        Normal = 0,
+        Diamond = 1,
+        Yellow = 2,
+        Silver = 3,
+        Copper = 4,
     }
 }

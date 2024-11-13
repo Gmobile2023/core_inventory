@@ -20,18 +20,22 @@ namespace Gmobile.Core.Inventory.Domain.Entities
 
         [StringLength(30)] public string StockCurrentCode { get; set; }
 
+        [StringLength(50)] public string SouceTransCode { get; set; }
+
         [References(typeof(Inventory))]
         public int StockId { get; set; }
 
         [References(typeof(Category))]
-        public int CategorId { get; set; }
-        [StringLength(30)] public string CategorCode { get; set; }
+        public int CategoryId { get; set; }
+        [StringLength(30)] public string CategoryCode { get; set; }
 
         [StringLength(15)] public string Mobile { get; set; }
 
         [StringLength(15)] public string TelCo { get; set; }
 
         public ProductStatus Status { get; set; }
+
+        public OrderAttributeType Attribute { get; set; }
 
         public int KitingStatus { get; set; }
 

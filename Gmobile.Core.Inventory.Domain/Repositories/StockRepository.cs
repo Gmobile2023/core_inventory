@@ -526,7 +526,30 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
-        public async Task<ActionTypeDto?> GetActionTypeByActionType(string actionType)
+
+        /// <summary>
+        /// Lấy loại sản phẩm
+        /// </summary>
+        /// <param name="categoryCode"></param>
+        /// <returns></returns>
+        public async Task<CategoryDto?> GetCategoryDetail(string categoryCode)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var inventory = await data.SingleAsync<Category>(c => c.CategoryCode == categoryCode);
+                var inventoryDto = inventory.ConvertTo<CategoryDto>();
+                _logger.LogInformation($"GetCategoryDetail categoryCode= {categoryCode} . Success ");
+                return inventoryDto;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error GetCategoryDetail categoryCode= {categoryCode}  Exception: {ex}");
+                return null;
+            }
+        }
+
+        private async Task<ActionTypeDto?> GetActionTypeByActionType(string actionType)
         {
             using var data = await _connectionFactory.OpenAsync();
             try
@@ -542,7 +565,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
-        public async Task<ResponseMessageBase<string>> AddLogInventoryActivitys(InventoryActivityLogDto log)
+        private async Task<ResponseMessageBase<string>> AddLogInventoryActivitys(InventoryActivityLogDto log)
         {
             using var data = await _connectionFactory.OpenAsync();
             try
@@ -556,6 +579,32 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                 _logger.LogError($"Error AddLogInventoryActivitys: {log.OrderCode}  Exception: {ex}");
                 return ResponseMessageBase<string>.Error();
             }
+        }
+
+
+
+        /// <summary>
+        /// Xử lý ghi lịch sử chung cả các dịch vụ
+        /// </summary>
+        /// <param name="activityLog"></param>
+        /// <returns></returns>
+        public async Task<ResponseMessageBase<string>> ActivitysLog(ActivityLogTypeDto activityLog)
+        {
+            #region 1.Validate
+
+            var logDto = activityLog.ConvertTo<InventoryActivityLogDto>();                      
+            var actionTypeDto = await GetActionTypeByActionType(activityLog.ActionType);
+            if (actionTypeDto != null)
+            {
+                logDto.Content = string.Format(actionTypeDto.Description, activityLog.OrderCode, activityLog.SrcStockName, activityLog.DesStockName);
+            }
+
+            logDto.CreatedDate = DateTime.Now;
+            logDto.Status = 1;
+
+            #endregion
+
+            return await AddLogInventoryActivitys(logDto);
         }
     }
 }

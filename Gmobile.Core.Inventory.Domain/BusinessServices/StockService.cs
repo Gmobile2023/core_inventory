@@ -4,6 +4,7 @@ using Gmobile.Core.Inventory.Models.Dtos;
 using Gmobile.Core.Inventory.Models.Routes.Backend;
 using Inventory.Shared.Const;
 using Inventory.Shared.Dtos.CommonDto;
+using Microsoft.Extensions.Logging;
 using ServiceStack;
 using System;
 using System.Collections.Generic;
@@ -16,9 +17,11 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
     public class StockService : IStockService
     {
         private readonly IStockRepository _stockRepository;
-        public StockService(IStockRepository stockRepository)
+        private readonly ILogger<StockService> _logger;
+        public StockService(IStockRepository stockRepository, ILogger<StockService> logger)
         {
             _stockRepository = stockRepository;
+            _logger = logger;
         }
 
         /// <summary>
@@ -98,12 +101,12 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
 
             var reponse = await _stockRepository.CreateInventory(inventoryDto, roleItems);
             if (reponse.ResponseStatus.ErrorCode == ResponseCodeConst.Success)
-                await ActivitysLog(new ActivityLogTypeDto()
+                await _stockRepository.ActivitysLog(new ActivityLogTypeDto()
                 {
                     ActionType = ActivityLogTypeValue.CreateStock,
                     StockLevel = inventoryDto.StockType,
                     DesStockName = request.StockName,
-                    UserProcess = request.UserCreated,
+                    UserCreated = request.UserCreated,
                 });
             return reponse;
         }
@@ -143,12 +146,12 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
 
             var reponse = await _stockRepository.UpdateInventory(inventoryDto, roleItems);
             if (reponse.ResponseStatus.ErrorCode == ResponseCodeConst.Success)
-                await ActivitysLog(new ActivityLogTypeDto()
+                await _stockRepository.ActivitysLog(new ActivityLogTypeDto()
                 {
                     ActionType = ActivityLogTypeValue.EditStock,
                     StockLevel = inventoryDto.StockType,
                     DesStockName = request.StockName,
-                    UserProcess = request.UserCreated,
+                    UserCreated = request.UserCreated,
                 });
 
             return reponse;
@@ -179,12 +182,12 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
 
             var reponse = await _stockRepository.ActiveInventory(request.Id, request.UserActive);
             if (reponse.ResponseStatus.ErrorCode == ResponseCodeConst.Success)
-                await ActivitysLog(new ActivityLogTypeDto()
+                await _stockRepository.ActivitysLog(new ActivityLogTypeDto()
                 {
                     ActionType = ActivityLogTypeValue.ActiveStock,
                     StockLevel = inventoryDto.StockLevel.ToString(),
                     DesStockName = inventoryDto.StockName,
-                    UserProcess = request.UserActive,
+                    UserCreated = request.UserActive,
                 });
 
             return reponse;
@@ -221,12 +224,12 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
 
             var reponse = await _stockRepository.AddSaleToInventory(request.Id, request.UserSale, request.UserCreate);
             if (reponse.ResponseStatus.ErrorCode == ResponseCodeConst.Success)
-                await ActivitysLog(new ActivityLogTypeDto()
+                await _stockRepository.ActivitysLog(new ActivityLogTypeDto()
                 {
                     ActionType = ActivityLogTypeValue.AccountToStock,
                     StockLevel = inventoryDto.StockLevel.ToString(),
                     DesStockName = inventoryDto.StockName,
-                    UserProcess = request.UserCreate,
+                    UserCreated = request.UserCreate,
                 });
 
             return reponse;
@@ -280,30 +283,6 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
             #endregion
 
             return await _stockRepository.GetSimDetailInventory(number, simType);
-        }
-
-        /// <summary>
-        /// Xử lý ghi lịch sử chung cả các dịch vụ
-        /// </summary>
-        /// <param name="activityLog"></param>
-        /// <returns></returns>
-        private async Task<ResponseMessageBase<string>> ActivitysLog(ActivityLogTypeDto activityLog)
-        {
-            #region 1.Validate
-
-            var logDto = activityLog.ConvertTo<InventoryActivityLogDto>();
-            var actionTypeDto = await _stockRepository.GetActionTypeByActionType(activityLog.ActionType);
-            if (actionTypeDto != null)
-            {
-                logDto.Content = string.Format(actionTypeDto.Description, activityLog.OrderCode, activityLog.SrcStockName, activityLog.DesStockName);
-            }
-
-            logDto.CreatedDate = DateTime.Now;
-            logDto.Status = 1;
-
-            #endregion
-
-            return await _stockRepository.AddLogInventoryActivitys(logDto);
         }
     }
 }

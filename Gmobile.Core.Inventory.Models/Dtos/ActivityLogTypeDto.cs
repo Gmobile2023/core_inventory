@@ -22,6 +22,6 @@ namespace Gmobile.Core.Inventory.Models.Dtos
 
         public string StockLevel { get; set; }
 
-        public string UserProcess { get; set; }
+        public string UserCreated { get; set; }
     }
 }

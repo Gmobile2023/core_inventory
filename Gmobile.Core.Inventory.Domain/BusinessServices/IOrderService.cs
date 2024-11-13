@@ -14,5 +14,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
         Task<ResponseMessageBase<PagedResultDto<OrderDisplayDto>>> GetListOrder(OrderListRequest request);
 
         Task<ResponseMessageBase<OrderMessage>> OrderCreate(OrderCreatedRequest request);
+
+        Task<ResponseMessageBase<OrderMessage>> ConfirmOrder(OrderConfirmRequest request);
     }
 }

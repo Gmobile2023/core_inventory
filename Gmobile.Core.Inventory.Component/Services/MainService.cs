@@ -121,6 +121,18 @@ public class MainService : Service
         return rs;
     }
 
+    /// <summary>
+    /// Xác nhận đơn hàng
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    public async Task<object> PutAsync(OrderConfirmRequest request)
+    {
+        _logger.LogInformation($"OrderConfirmRequest {request.ToJson()}");
+        var rs = await _orderService.ConfirmOrder(request);
+        return rs;
+    }
+
     #endregion
 
 }

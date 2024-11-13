@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ServiceStack.DataAnnotations;
+using Gmobile.Core.Inventory.Models.Const;
 
 namespace Gmobile.Core.Inventory.Domain.Entities
 {
@@ -19,6 +20,8 @@ namespace Gmobile.Core.Inventory.Domain.Entities
 
         public int Quantity { get; set; }
 
+        public int QuantityCurrent { get; set; }
+
         [StringLength(50)] public string Range { get; set; }        
 
         public decimal CostPrice { get; set; }
@@ -28,5 +31,7 @@ namespace Gmobile.Core.Inventory.Domain.Entities
         public int CategoryId { get; set; }
 
         [StringLength(30)] public string CategoryCode { get; set; }
+        public OrderAttributeType Attribute { get; set; }
+        [StringLength(15)] public string TelCo { get; set; }
     }
 }

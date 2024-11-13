@@ -28,7 +28,10 @@ public class AppHost() : AppHostBase("gmobile_inventory", typeof(MainService).As
                     .Configure(options => options.ShutdownTimeout = TimeSpan.FromMinutes(1));
                 services.AddScoped<ICacheManager, CacheManager>();
                 services.AddScoped<IStockRepository, StockRepository>();
+                services.AddScoped<IOrderRepository, OrderRepository>();
+               // services.AddScoped<ITransCodeGenerator, TransCodeGenerator>();
                 services.AddScoped<IStockService, StockService>();
+                services.AddScoped<IOrderService, OrderService>();
             })
             .ConfigureAppHost(appHost => { })
             .Configure((context, app) =>

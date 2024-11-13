@@ -31,7 +31,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
 
         Task<ResponseMessageBase<SimDispalyDto>> GetSimDetailInventory(string number, int simType);
 
-        Task<ActionTypeDto?> GetActionTypeByActionType(string actionType);
-        Task<ResponseMessageBase<string>> AddLogInventoryActivitys(InventoryActivityLogDto log);
+        Task<CategoryDto?> GetCategoryDetail(string categoryCode);
+        Task<ResponseMessageBase<string>> ActivitysLog(ActivityLogTypeDto activityLog);
     }
 }

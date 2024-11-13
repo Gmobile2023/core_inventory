@@ -1,4 +1,5 @@
-﻿using Gmobile.Core.Inventory.Models.Const;
+﻿using Gmobile.Core.Inventory.Domain.Entities;
+using Gmobile.Core.Inventory.Models.Const;
 using Gmobile.Core.Inventory.Models.Dtos;
 using Gmobile.Core.Inventory.Models.Routes.Backend;
 using Inventory.Shared.CacheManager;
@@ -8,6 +9,7 @@ using ServiceStack;
 using ServiceStack.OrmLite;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -45,13 +47,13 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                 if (!string.IsNullOrEmpty(request.OrderTitle))
                 {
                     request.OrderTitle = request.OrderTitle.Trim();
-                    query = query.Where(c => c.OrderType.Contains(request.OrderTitle));
+                    query = query.Where(c => c.OrderTitle.Contains(request.OrderTitle));
                 }
 
-                if (!string.IsNullOrEmpty(request.OrderType))
+                if (request.OrderType > 0 && request.OrderType != 99)
                 {
-                    request.OrderType = request.OrderType.Trim();
-                    query = query.Where(c => c.OrderType.Contains(request.OrderType));
+                    var orderType = (OrderValueType)request.OrderType;
+                    query = query.Where(c => c.OrderType == orderType);
                 }
 
                 if (request.Status != 99)
@@ -107,6 +109,8 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             try
             {
                 var order = orderDto.ConvertTo<Entities.Order>();
+                order.CreatedBy = order.UserCreated;
+                order.ModifiedBy = order.UserCreated;
                 var orderDetails = items.ConvertTo<List<Entities.OrderDetails>>();
                 var id = await data.InsertAsync(order, true);
                 orderDetails.ForEach(c =>
@@ -131,5 +135,191 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                 return ResponseMessageBase<OrderMessage>.Error("Tạo đơn hàng thất bại. Vui lòng kiểm tra lại thông tin !");
             }
         }
+
+        /// <summary>
+        /// Cập nhật đơn hàng
+        /// </summary>
+        /// <param name="orderDto"></param>
+        /// <param name="status"></param>
+        /// <returns></returns>
+        public async Task<ResponseMessageBase<OrderMessage>> ConfirmOrder(OrderDto orderDto, OrderDescription orderDescription)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            using var trans = data.OpenTransaction();
+            try
+            {
+                var order = await data.SingleAsync<Entities.Order>(c => c.OrderCode == orderDto.OrderCode);
+                order.UserConfirm = orderDto.UserConfirm;
+                order.UserApprove = orderDto.UserApprove;
+                order.ApproveDate = orderDto.ApproveDate;
+                order.ConfirmDate = orderDto.ConfirmDate;
+                order.ModifiedBy = orderDto.UserCreated;
+                order.Status = orderDto.Status;
+                orderDescription.OrderId = (int)orderDto.Id;
+                orderDescription.CreatedDate = DateTime.Now;
+                await data.UpdateAsync(order);
+                await data.InsertAsync(orderDescription);
+                trans.Commit();
+                _logger.LogInformation($"ConfirmOrder {orderDto.OrderCode}. Success ");
+                return ResponseMessageBase<OrderMessage>.Success(new OrderMessage()
+                {
+                    OrderCode = order.OrderCode,
+                    Quantity = order.Quantity,
+                    Amount = order.CostPrice,
+                });
+            }
+            catch (Exception ex)
+            {
+                trans.Rollback();
+                _logger.LogError($"Error ConfirmOrder {orderDto.ToJson()} Exception: {ex}");
+                return ResponseMessageBase<OrderMessage>.Error("Cập nhật đơn hàng thất bại. Vui lòng kiểm tra lại thông tin !");
+            }
+        }
+
+
+        /// <summary>
+        /// Lấy chi tiết đơn hàng
+        /// </summary>
+        /// <param name="orderCode"></param>
+        /// <returns></returns>
+        public async Task<OrderDto?> GetOrderByCode(string orderCode)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var order = await data.SingleAsync<Entities.Order>(c => c.OrderCode == orderCode);
+                var orderDto = order?.ConvertTo<OrderDto>();
+                _logger.LogInformation($"GetOrderByCode OrderCode= {orderCode} . Success ");
+                return orderDto;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error GetOrderByCode OrderCode= {orderCode}  Exception: {ex}");
+                return null;
+            }
+        }
+
+        public async Task<List<OrderDetailDto>> GetListOrderDetail(int orderId)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var orderDetails = await data.SelectAsync<Entities.OrderDetails>(c => c.OrderId == orderId);
+                var details = orderDetails.ConvertTo<List<OrderDetailDto>>();
+                _logger.LogInformation($"GetListOrderDetail orderID= {orderId} . Success ");
+                return details;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error GetListOrderDetail orderID= {orderId}  Exception: {ex}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Insert danh sách serial
+        /// </summary>
+        /// <param name="orderCode"></param>
+        /// <param name="serials"></param>
+        /// <returns></returns>
+        public async Task<int> SyncToSerial(string orderCode, List<Serials> serials)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                await data.InsertAllAsync(serials);
+                _logger.LogInformation($"SyncToSerial OrderCode= {orderCode} - Total= {serials.Count} . Success ");
+                return serials.Count();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error SyncToSerial OrderCode= {orderCode} - Total= {serials.Count}  Exception: {ex}");
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Insert danh sách số 
+        /// </summary>
+        /// <param name="orderCode"></param>
+        /// <param name="products"></param>
+        /// <returns></returns>
+        public async Task<int> SyncToMobile(string orderCode, List<Product> products)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                await data.InsertAllAsync(products);
+                _logger.LogInformation($"SyncToMobile OrderCode= {orderCode} - Total= {products.Count} . Success ");
+                return products.Count();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error SyncToMobile OrderCode= {orderCode} - Total= {products.Count}  Exception: {ex}");
+                return 0;
+            }
+        }
+
+        public async Task<List<string>> GetListSerialToList(List<string> serials)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var serialDetails = await data.SelectAsync<Entities.Serials>(c => serials.Contains(c.Serial));
+                var details = serialDetails.Select(c => c.Serial).ToList();
+                return details;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error GetListSerialToList Exception: {ex}");
+                return null;
+            }
+        }
+
+        public async Task<List<string>> GetListMobileToList(List<string> mobiles)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var mobileDetails = await data.SelectAsync<Entities.Product>(c => mobiles.Contains(c.Mobile));
+                var details = mobileDetails.Select(c => c.Mobile).ToList();
+                return details;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error GetListMobileToList Exception: {ex}");
+                return null;
+            }
+        }
+
+        public async Task<bool> UpdateOrderTotalCurrent(OrderDto orderDto, List<OrderDetailDto> details)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            using var trans = data.OpenTransaction();
+            try
+            {
+                var orderDetails = await data.SelectAsync<Entities.OrderDetails>(c => c.OrderId == orderDto.Id);
+                orderDetails.ForEach(c =>
+                {
+                    var d = details.FirstOrDefault(x => x.Id == c.Id);
+                    if (d != null)
+                        c.QuantityCurrent = d.QuantityCurrent;
+                });
+                var order = await data.SingleByIdAsync<Entities.Order>(orderDto.Id);
+                order.QuantityCurrent = orderDto.QuantityCurrent;
+                await data.UpdateAsync(order);
+                await data.UpdateAllAsync(orderDetails);
+                trans.Commit();
+                _logger.LogInformation($"UpdateOrderTotalCurrent  OrderCode= {orderDto.OrderCode}. Success ");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                trans.Rollback();
+                _logger.LogError($"Error UpdateOrderTotalCurrent- OrderId= {orderDto.OrderCode} Exception: {ex}");
+                return false;
+            }
+        }
+
     }
 }
