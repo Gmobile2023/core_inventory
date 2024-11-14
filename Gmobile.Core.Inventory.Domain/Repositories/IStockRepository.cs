@@ -36,13 +36,13 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
         Task<CategoryDto?> GetCategoryDetail(string categoryCode);
         Task<ResponseMessageBase<string>> ActivitysLog(ActivityLogTypeDto activityLog);
 
-        Task<KitingLog> CreateKitingLog(KitingLog kitingDto);
+        Task<PriceKitingSettings> CreateKitingLog(PriceKitingSettings kitingDto);
 
-        Task<bool> UpdateKitingLog(KitingLog kitingDto);
+        Task<bool> UpdateKitingLog(PriceKitingSettings kitingDto);
 
-        Task<int> SyncKitingToMobile(int stockId, KitingType kitType, List<KitingLogDetails> details);
+        Task<int> SyncKitingToMobile(int stockId, SettingType kitType, List<PriceKitingDetails> details);
 
-        Task<List<KitingLogDetails>> GetListKitLogDetail(long kitId);
+        Task<List<PriceKitingDetails>> GetListKitLogDetail(long kitId);
         Task SyncActivityDetailLogs(List<ActivityDetailLogs> details);
 
         Task<List<string>> GetProductListFillLog(string souceTransCode);

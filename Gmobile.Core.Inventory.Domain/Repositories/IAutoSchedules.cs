@@ -66,7 +66,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
         {
             try
             {               
-                var lt = dataRanger.Take(ConstSkipCount.SkipCount).ToList();
+                var lt = dataRanger.Take(ConstTakeCount.TakeCount).ToList();
                 var tmpKit = lt.Select(c => c.Number).ToList();
                 dataRanger.RemoveAll(c => tmpKit.Contains(c.Number));
                 int scanInt = 0;
@@ -94,7 +94,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                     if (arraysSerial.Count > 0)
                         await _stockRepository.SyncActivityDetailLogs(arraysSerial);
 
-                    lt = dataRanger.Take(ConstSkipCount.SkipCount).ToList();
+                    lt = dataRanger.Take(ConstTakeCount.TakeCount).ToList();
                     tmpKit = lt.Select(c => c.Number).ToList();
                     dataRanger.RemoveAll(c => tmpKit.Contains(c.Number));
                     scanInt = scanInt + 1;
@@ -115,7 +115,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             var item = new List<MemberDto>();
             if (actionType is ActivityLogTypeValue.CreateKitting or ActivityLogTypeValue.CreateUnKitting)
             {
-                var dataRanger = data.ConvertTo<List<KitingLogDetails>>();
+                var dataRanger = data.ConvertTo<List<PriceKitingDetails>>();
                 item = (from x in dataRanger
                         select new MemberDto
                         {

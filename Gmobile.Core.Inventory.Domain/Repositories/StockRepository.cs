@@ -648,7 +648,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
-        public async Task<bool> UpdateKitingLog(KitingLog kitingDto)
+        public async Task<bool> UpdateKitingLog(PriceKitingSettings kitingDto)
         {
             using var data = await _connectionFactory.OpenAsync();
             try
@@ -664,7 +664,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
-        public async Task<KitingLog> CreateKitingLog(KitingLog kitingDto)
+        public async Task<PriceKitingSettings> CreateKitingLog(PriceKitingSettings kitingDto)
         {
             using var data = await _connectionFactory.OpenAsync();
             try
@@ -680,7 +680,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
-        public async Task<int> SyncKitingToMobile(int stockId, KitingType kitType, List<KitingLogDetails> details)
+        public async Task<int> SyncKitingToMobile(int stockId, SettingType kitType, List<PriceKitingDetails> details)
         {
             using var data = await _connectionFactory.OpenAsync();
             try
@@ -693,7 +693,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                     if (d != null)
                     {
                         d.Status = 1;
-                        if (kitType == KitingType.Kiting)
+                        if (kitType == SettingType.Kiting)
                         {
                             c.Serial = d.Serial;
                             c.Package = d.Package;
@@ -720,12 +720,12 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
-        public async Task<List<KitingLogDetails>> GetListKitLogDetail(long kitId)
+        public async Task<List<PriceKitingDetails>> GetListKitLogDetail(long kitId)
         {
             using var data = await _connectionFactory.OpenAsync();
             try
             {
-                var details = await data.SelectAsync<KitingLogDetails>(c => c.KitingId == kitId);
+                var details = await data.SelectAsync<PriceKitingDetails>(c => c.SettingId == kitId);
                 _logger.LogInformation($"GetListKitLogDetail kitId= {kitId} . Success ");
                 return details;
             }

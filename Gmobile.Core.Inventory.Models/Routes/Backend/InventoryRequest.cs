@@ -189,8 +189,22 @@ namespace Gmobile.Core.Inventory.Models.Routes.Backend
     public class StockKitingRequest : IPost, IReturn<object>
     {
         public int StockId { get; set; }
-
         public string UserCreated { get; set; }
-        public KitingType KitingType { get; set; }
-    }   
+        public SettingType Type { get; set; }
+    }
+
+
+    [Description("Tạo yêu cầu cập nhật giá bán")]
+    [Tag(Name = "inventory")]
+    [Route("/api/v1/inventory/sale/price", "POST")]
+    public class StockSalePriceRequest : IPost, IReturn<object>
+    {
+        public int StockId { get; set; }
+        public string UserCreated { get; set; }         
+        public PriceType PriceType { get; set; }
+        public ObjectType Type { get; set; }
+        public decimal Value { get; set; }
+
+        public List<string> Items { get; set; }
+    }
 }

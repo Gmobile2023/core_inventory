@@ -148,7 +148,7 @@ public class MainService : Service
             var file = Request.Files.FirstOrDefault();
             if (file != null)
             {
-                var items = new List<Models.Dtos.KitingItem>();
+                var items = new List<Models.Dtos.SettingItem>();
                 using (var binaryReader = new BinaryReader(file.InputStream))
                 {
                     var fileData = binaryReader.ReadBytes((int)file.ContentLength);
@@ -156,11 +156,11 @@ public class MainService : Service
                     items = await _fileService.ReadFileXls(stream);
                 }
 
-                var rs = await _stockService.KitingInventory(new Models.Dtos.KitingDto()
+                var rs = await _stockService.KitingInventory(new Models.Dtos.SettingDto()
                 {
                     StockId = request.StockId,
                     UserCreated = request.UserCreated,
-                    Type = request.KitingType,
+                    Type = request.Type,
                     Items = items
                 });
                 return rs;

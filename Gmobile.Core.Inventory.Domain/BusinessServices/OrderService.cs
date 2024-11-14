@@ -354,7 +354,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 var ranger = details.Range.Split('-');
                 var reponse = GenRangeData(ranger[0], ranger[1]);
                 var dataRanger = reponse.Results;
-                var lt = dataRanger.Take(ConstSkipCount.SkipCount).ToList();
+                var lt = dataRanger.Take(ConstTakeCount.TakeCount).ToList();
                 var serialTmp = lt.Select(c => c).ToList();
                 dataRanger = dataRanger.Except(serialTmp).ToList();
                 int scanInt = 0;
@@ -391,7 +391,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                         totalCurrent = totalCurrent + await _orderRepository.SyncToSerial(orderDto.OrderCode, arrays);
                     }
 
-                    lt = dataRanger.Take(ConstSkipCount.SkipCount).ToList();
+                    lt = dataRanger.Take(ConstTakeCount.TakeCount).ToList();
                     serialTmp = lt.Select(c => c).ToList();
                     dataRanger = dataRanger.Except(serialTmp).ToList();
                     scanInt = scanInt + 1;
@@ -421,7 +421,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 var ranger = details.Range.Split('-');
                 var reponse = GenRangeData(ranger[0], ranger[1]);
                 var dataRanger = reponse.Results;
-                var lt = dataRanger.Take(ConstSkipCount.SkipCount).ToList();
+                var lt = dataRanger.Take(ConstTakeCount.TakeCount).ToList();
                 var serialTmp = lt.Select(c => c).ToList();
                 dataRanger = dataRanger.Except(serialTmp).ToList();
                 int scanInt = 0;
@@ -462,7 +462,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                         totalCurrent = totalCurrent + await _orderRepository.SyncToMobile(orderDto.OrderCode, arrays);
                     }
 
-                    lt = dataRanger.Take(ConstSkipCount.SkipCount).ToList();
+                    lt = dataRanger.Take(ConstTakeCount.TakeCount).ToList();
                     serialTmp = lt.Select(c => c).ToList();
                     dataRanger = dataRanger.Except(serialTmp).ToList();
                     scanInt = scanInt + 1;

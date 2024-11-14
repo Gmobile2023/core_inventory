@@ -9,6 +9,6 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
 {
     public interface IFileService
     {
-        Task<List<KitingItem>> ReadFileXls(Stream stream);
+        Task<List<SettingItem>> ReadFileXls(Stream stream);
     }
 }

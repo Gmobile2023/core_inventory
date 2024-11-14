@@ -18,12 +18,12 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
             _logger = logger;
         }
 
-        public async Task<List<KitingItem>> ReadFileXls(Stream stream)
+        public async Task<List<SettingItem>> ReadFileXls(Stream stream)
         {
             try
             {
 
-                List<KitingItem> lst = new List<KitingItem>();
+                List<SettingItem> lst = new List<SettingItem>();
                 var desFileCsv = await GetFilexls(stream, retry: 0);
                 var compareDate = DateTime.Now;
                 using (var sreader = System.IO.File.OpenRead(desFileCsv))
@@ -36,7 +36,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                             var line = item.Split(',');
                             if (line.Length >= 1)
                             {
-                                lst.Add(new KitingItem()
+                                lst.Add(new SettingItem()
                                 {
                                     Mobile = line[0],
                                     Serial = line.Length >= 2 ? line[1] : string.Empty,

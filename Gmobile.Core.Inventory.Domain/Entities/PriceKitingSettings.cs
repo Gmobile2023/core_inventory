@@ -10,8 +10,8 @@ using System.Threading.Tasks;
 namespace Gmobile.Core.Inventory.Domain.Entities
 {
     [Schema("public")]
-    [Alias("kiting_log")]
-    public class KitingLog : IHasId<long>
+    [Alias("price_kiting_settings")]
+    public class PriceKitingSettings : IHasId<long>
     {
         [AutoIncrement][PrimaryKey] public long Id { get; set; }
 
@@ -19,7 +19,7 @@ namespace Gmobile.Core.Inventory.Domain.Entities
 
         public int Status { get; set; }
 
-        public KitingType KitingType { get; set; }
+        public SettingType Type { get; set; }
 
         public int Quantity { get; set; }
 

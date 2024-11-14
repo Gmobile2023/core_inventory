@@ -40,8 +40,8 @@ public class ConfigureDb : IHostingStartup
             db.CreateTableIfNotExists<Domain.Entities.ActivityDetailLogs>();
             db.CreateTableIfNotExists<Domain.Entities.InventorySettings>();
             db.CreateTableIfNotExists<Domain.Entities.InventoryRoles>();
-            db.CreateTableIfNotExists<Domain.Entities.KitingLog>();
-            db.CreateTableIfNotExists<Domain.Entities.KitingLogDetails>();
+            db.CreateTableIfNotExists<Domain.Entities.PriceKitingSettings>();
+            db.CreateTableIfNotExists<Domain.Entities.PriceKitingDetails>();
 
 
             OrmLiteConfig.DialectProvider.GetStringConverter().UseUnicode = true;

@@ -293,7 +293,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
         /// </summary>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public async Task<ResponseMessageBase<string>> KitingInventory(KitingDto dto)
+        public async Task<ResponseMessageBase<string>> KitingInventory(SettingDto dto)
         {
             #region 1.Validate
 
@@ -310,9 +310,9 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
 
             #endregion
 
-            var kitLog = await _stockRepository.CreateKitingLog(new KitingLog()
+            var kitLog = await _stockRepository.CreateKitingLog(new PriceKitingSettings()
             {
-                KitingType = dto.Type,
+                Type = dto.Type,
                 StockId = dto.StockId,
                 Status = 1,
                 UserCreated = dto.UserCreated,
@@ -322,13 +322,13 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
             return await KitingToMobile(stockDto, kitLog, dto);
         }
 
-        private async Task<ResponseMessageBase<string>> KitingToMobile(InventoryDto? stockDto, KitingLog kitlog, KitingDto dto)
+        private async Task<ResponseMessageBase<string>> KitingToMobile(InventoryDto? stockDto, PriceKitingSettings kitlog, SettingDto dto)
         {
             int totalCurrent = 0;
             try
             {
                 var dataRanger = dto.Items;
-                var lt = dataRanger.Take(ConstSkipCount.SkipCount).ToList();
+                var lt = dataRanger.Take(ConstTakeCount.TakeCount).ToList();
                 var tmpKit = lt.Select(c => c.Mobile).ToList();
                 dataRanger.RemoveAll(c => tmpKit.Contains(c.Mobile));
                 int scanInt = 0;
@@ -336,17 +336,17 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 {
                     _logger.LogInformation($"AddKitingToMobile_Step: {scanInt} - StockId= {dto.StockId} - kitingType= {dto.Type} - run_row = {lt.Count}");
                     var arrays = (from x in lt
-                                  select new KitingLogDetails
+                                  select new PriceKitingDetails
                                   {
                                       Mobile = x.Mobile,
                                       Package = x.Package,
                                       Serial = x.Serial,
-                                      KitingId = (int)kitlog.Id,
+                                      SettingId = (int)kitlog.Id,
                                       CreatedDate = DateTime.Now,
                                   }).ToList();
 
-                    totalCurrent = totalCurrent + await _stockRepository.SyncKitingToMobile(kitlog.StockId, kitlog.KitingType, arrays);
-                    lt = dataRanger.Take(ConstSkipCount.SkipCount).ToList();
+                    totalCurrent = totalCurrent + await _stockRepository.SyncKitingToMobile(kitlog.StockId, kitlog.Type, arrays);
+                    lt = dataRanger.Take(ConstTakeCount.TakeCount).ToList();
                     tmpKit = lt.Select(c => c.Mobile).ToList();
                     dataRanger.RemoveAll(c => tmpKit.Contains(c.Mobile));
                     scanInt = scanInt + 1;
@@ -356,7 +356,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 await _stockRepository.UpdateKitingLog(kitlog);
                 await _stockRepository.ActivitysLog(new ActivityLogTypeDto()
                 {
-                    ActionType = kitlog.KitingType == KitingType.Kiting
+                    ActionType = kitlog.Type == SettingType.Kiting
                     ? ActivityLogTypeValue.CreateKitting
                     : ActivityLogTypeValue.CreateUnKitting,
                     StockLevel = stockDto != null ? stockDto.StockLevel.ToString() : string.Empty,

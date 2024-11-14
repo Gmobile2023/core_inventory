@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace Gmobile.Core.Inventory.Models.Const
 {
-    public class ConstSkipCount
+    public class ConstTakeCount
     {
-        public const int SkipCount = 5000;
+        public const int TakeCount = 5000;
     }
 }

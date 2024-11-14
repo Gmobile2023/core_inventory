@@ -29,6 +29,6 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
 
         Task<ResponseMessageBase<SimDispalyDto>> GetSimDetailInventory(string number, int simType);
 
-        Task<ResponseMessageBase<string>> KitingInventory(KitingDto dto);
+        Task<ResponseMessageBase<string>> KitingInventory(SettingDto dto);
     }
 }
