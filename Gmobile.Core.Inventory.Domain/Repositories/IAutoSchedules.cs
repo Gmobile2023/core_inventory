@@ -44,13 +44,19 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                 }
                 else if (dto.ActionType is ActivityLogTypeValue.ConfirmSerial)
                 {
-                    var data = await _stockRepository.GetSerialListFillLog(dto.KeyCode);
+                    var data = await _stockRepository.GetSerialListFillLog(dto.StockId, souceTransCode: dto.KeyCode);
                     var dataRanger = ConvertInitToData(dto.ActionType, data);
                     await SyncActivityDetailLog(dto.LogId, dto.Description, dataRanger);
                 }
-                else if (dto.ActionType is  ActivityLogTypeValue.ConfirmMobile)
+                else if (dto.ActionType is ActivityLogTypeValue.ConfirmMobile)
                 {
-                    var data = await _stockRepository.GetProductListFillLog(dto.KeyCode);
+                    var data = await _stockRepository.GetProductListFillLog(dto.StockId, souceTransCode: dto.KeyCode);
+                    var dataRanger = ConvertInitToData(dto.ActionType, data);
+                    await SyncActivityDetailLog(dto.LogId, dto.Description, dataRanger);
+                }
+                else if (dto.ActionType is ActivityLogTypeValue.CreateSaleSerial or ActivityLogTypeValue.CreateSaleMobile)
+                {
+                    var data = await _stockRepository.GetProductListFillLog(dto.StockId, souceTransCode: dto.KeyCode);
                     var dataRanger = ConvertInitToData(dto.ActionType, data);
                     await SyncActivityDetailLog(dto.LogId, dto.Description, dataRanger);
                 }
@@ -65,7 +71,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
         private async Task<ResponseMessageBase<string>> SyncActivityDetailLog(long logId, string description, List<MemberDto> dataRanger)
         {
             try
-            {               
+            {
                 var lt = dataRanger.Take(ConstTakeCount.TakeCount).ToList();
                 var tmpKit = lt.Select(c => c.Number).ToList();
                 dataRanger.RemoveAll(c => tmpKit.Contains(c.Number));
@@ -138,7 +144,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                 item = (from x in dataRanger
                         select new MemberDto
                         {
-                            Number = x                            
+                            Number = x
                         }).ToList();
             }
 

@@ -16,9 +16,8 @@ namespace Gmobile.Core.Inventory.Models.Const
 
     public enum OrderSimType : byte
     {
-        Physic = 1,
-        GSim = 2,
-        Serial = 3,
+        Mobile = 1,        
+        Serial = 2,
     }
 
     public enum OrderAttributeType : byte

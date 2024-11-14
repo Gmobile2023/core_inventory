@@ -138,6 +138,11 @@ public class MainService : Service
         return rs;
     }
 
+    /// <summary>
+    /// Thay đổi kit cho sim/số
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
     public async Task<object> PostAsync(StockKitingRequest request)
     {
         _logger.LogInformation($"StockKitingRequest {request.ToJson()}");
@@ -177,6 +182,19 @@ public class MainService : Service
             _logger.LogError($"StockKitingRequest Exception: {ex}");
             return ResponseMessageBase<string>.Error("Quý khách chưa upload file dữ liệu.");
         }
+    }
+
+    /// <summary>
+    /// Đồng bộ giá trên hệ thống
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    public async Task<object> PostAsync(StockSalePriceRequest request)
+    {
+        _logger.LogInformation($"StockSalePriceRequest {request.ToJson()}");
+        var rs = await _stockService.SalePriceInventory(request);
+        _logger.LogInformation($"StockSalePrice {rs.ToJson()}");
+        return rs;
     }
 
     #endregion

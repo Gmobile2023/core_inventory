@@ -15,6 +15,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Gmobile.Core.Inventory.Domain.Repositories
 {
@@ -613,6 +614,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                         BackgroundJob.Schedule<IAutoSchedules>(
                          (x) => x.ActivityLogSchedule(new ActivityLogItemInit()
                          {
+                             StockId = activityLog.StockId,
                              ActionType = activityLog.ActionType,
                              LogId = logId,
                              KitingId = activityLog.KitingId,
@@ -622,11 +624,27 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                              : "Hủy bỏ Kiting",
                          }), TimeSpan.FromMinutes(1));
                     }
+                    else if (activityLog.ActionType is ActivityLogTypeValue.CreateSaleMobile or ActivityLogTypeValue.CreateSaleSerial)
+                    {
+                        BackgroundJob.Schedule<IAutoSchedules>(
+                         (x) => x.ActivityLogSchedule(new ActivityLogItemInit()
+                         {
+                             StockId = activityLog.StockId,
+                             ActionType = activityLog.ActionType,
+                             LogId = logId,
+                             KitingId = activityLog.KitingId,
+                             KeyCode = activityLog.OrderCode,
+                             Description = activityLog.ActionType == ActivityLogTypeValue.CreateSaleMobile
+                             ? "Thay đổi giá số"
+                             : "Thay đổi giá serial",
+                         }), TimeSpan.FromMinutes(1));
+                    }
                     else if (activityLog.ActionType is ActivityLogTypeValue.ConfirmMobile or ActivityLogTypeValue.ConfirmSerial)
                     {
                         BackgroundJob.Schedule<IAutoSchedules>(
                         (x) => x.ActivityLogSchedule(new ActivityLogItemInit()
                         {
+                            StockId = activityLog.StockId,
                             ActionType = activityLog.ActionType,
                             LogId = logId,
                             KitingId = activityLog.KitingId,
@@ -648,34 +666,34 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
-        public async Task<bool> UpdateKitingLog(PriceKitingSettings kitingDto)
+        public async Task<bool> UpdatePriceKitingSettings(PriceKitingSettings settingDto)
         {
             using var data = await _connectionFactory.OpenAsync();
             try
             {
-                await data.UpdateAsync(kitingDto);
-                _logger.LogInformation($"UpdateKitingLog {kitingDto.ToJson()}. Success ");
+                await data.UpdateAsync(settingDto);
+                _logger.LogInformation($"UpdatePriceKitingSettings {settingDto.ToJson()}. Success ");
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error UpdateKitingLog {kitingDto.ToJson()} Exception: {ex}");
+                _logger.LogError($"Error UpdatePriceKitingSettings {settingDto.ToJson()} Exception: {ex}");
                 return false;
             }
         }
 
-        public async Task<PriceKitingSettings> CreateKitingLog(PriceKitingSettings kitingDto)
+        public async Task<PriceKitingSettings> CreatePriceKitingSettings(PriceKitingSettings settingDto)
         {
             using var data = await _connectionFactory.OpenAsync();
             try
             {
-                kitingDto.Id = await data.InsertAsync(kitingDto, true);
-                _logger.LogInformation($"CreateKitingLog {kitingDto.ToJson()}. Success ");
-                return kitingDto;
+                settingDto.Id = await data.InsertAsync(settingDto, true);
+                _logger.LogInformation($"CreatePriceKitingSettings {settingDto.ToJson()}. Success ");
+                return settingDto;
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error CreateKitingLog {kitingDto.ToJson()} Exception: {ex}");
+                _logger.LogError($"Error CreatePriceKitingSettings {settingDto.ToJson()} Exception: {ex}");
                 return null;
             }
         }
@@ -750,14 +768,30 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
-        public async Task<List<string>> GetProductListFillLog(string souceTransCode)
+        public async Task<List<SalePriceDto>> GetProductListFillLog(int stockId, string souceTransCode = "", List<string>? arrays = null)
         {
-            using var data = await _connectionFactory.OpenAsync();
             try
             {
-                var details = await data.SelectAsync<Product>(c => c.SouceTransCode == souceTransCode);
+                using var data = await _connectionFactory.OpenAsync();
+                var query = data.From<Entities.Product>().Where(p => p.StockId == stockId);
+                if (!string.IsNullOrEmpty(souceTransCode))
+                {
+                    query = query.Where(c => c.SouceTransCode == souceTransCode);
+                }
+
+                if (arrays != null && arrays.Count > 0)
+                {
+                    query = query.Where(c => arrays.Contains(c.Mobile));
+                }
+                var details = await data.SelectAsync(query);
+
                 _logger.LogInformation($"GetProductListFillLog souceTransCode = {souceTransCode} . Success ");
-                return details.Select(c => c.Mobile).ToList();
+                return details.Select(c => new SalePriceDto()
+                {
+                    Number = c.Mobile,
+                    SalePrice = c.SalePrice,
+
+                }).ToList();
             }
             catch (Exception ex)
             {
@@ -766,14 +800,29 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
-        public async Task<List<string>> GetSerialListFillLog(string souceTransCode)
+        public async Task<List<SalePriceDto>> GetSerialListFillLog(int stockId, string souceTransCode = "", List<string>? arrays = null)
         {
-            using var data = await _connectionFactory.OpenAsync();
             try
             {
-                var details = await data.SelectAsync<Serials>(c => c.SouceTransCode == souceTransCode);
+                using var data = await _connectionFactory.OpenAsync();
+                var query = data.From<Entities.Serials>().Where(p => p.StockId == stockId);
+                if (!string.IsNullOrEmpty(souceTransCode))
+                {
+                    query = query.Where(c => c.SouceTransCode == souceTransCode);
+                }
+
+                if (arrays != null && arrays.Count > 0)
+                {
+                    query = query.Where(c => arrays.Contains(c.Serial));
+                }
+                var details = await data.SelectAsync(query);
                 _logger.LogInformation($"GetSerialListFillLog souceTransCode = {souceTransCode} . Success ");
-                return details.Select(c => c.Serial).ToList();
+                return details.Select(c => new SalePriceDto
+                {
+                    Number = c.Serial,
+                    SalePrice = c.SalePrice,
+
+                }).ToList();
             }
             catch (Exception ex)
             {
@@ -805,16 +854,61 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                     {
                         var s = shortCodeNow.Substring(shortCode.Length, shortCodeNow.Length - shortCode.Length);
                         var l = Convert.ToInt32(s) + 1;
-                        return $"{shortCode}{l.ToString().PadLeft(number, '0')}";                        
+                        return $"{shortCode}{l.ToString().PadLeft(number, '0')}";
                     }
                 }
 
-                return DateTime.Now.ToString("yyMMddHHmmss"); 
+                return DateTime.Now.ToString("yyMMddHHmmss");
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error GetStockShortByStockType: stockType= {stockType}  Exception: {ex}");
                 return DateTime.Now.ToString("yyMMddHHmmss");
+            }
+        }
+
+        public async Task<int> SyncSalePriceToSystem(int stockId, OrderSimType simType, List<SalePriceDto> salePrices, List<PriceKitingDetails> details)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                int totalCurrent = 0;
+                var numbers = salePrices.Select(c => c.Number).ToList();
+                if (simType == OrderSimType.Mobile)
+                {
+                    var mobileDetails = await data.SelectAsync<Entities.Product>(c => numbers.Contains(c.Mobile) && c.Status == ProductStatus.Success);
+                    mobileDetails.ForEach(c =>
+                    {
+                        var d = salePrices.FirstOrDefault(x => x.Number == c.Mobile);
+                        if (d != null)
+                            c.SalePrice = d.SalePrice;
+                    });
+
+                    await data.UpdateAllAsync(mobileDetails);
+                    totalCurrent = mobileDetails.Count();
+                }
+                else
+                {
+                    var serialDetails = await data.SelectAsync<Entities.Serials>(c => numbers.Contains(c.Serial) && c.Status == SerialStatus.Success);
+                    serialDetails.ForEach(c =>
+                    {
+                        var d = salePrices.FirstOrDefault(x => x.Number == c.Serial);
+                        if (d != null)
+                            c.SalePrice = d.SalePrice;
+                    });
+
+                    await data.UpdateAllAsync(serialDetails);
+                    totalCurrent = serialDetails.Count();
+                }
+
+                await data.InsertAllAsync(details);
+                _logger.LogInformation($"SyncSalePriceToSystem stockId= {stockId} - Total= {details.Count} . Success ");
+                return totalCurrent;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error SyncSalePriceToSystem stockId= {stockId} - Total= {details.Count}  Exception: {ex}");
+                return 0;
             }
         }
     }

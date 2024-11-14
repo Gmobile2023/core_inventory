@@ -32,7 +32,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
         /// <param name="request"></param>
         /// <returns></returns>
         public async Task<ResponseMessageBase<PagedResultDto<InventoryDto>>> GetListInventory(StockListRequest request)
-        {            
+        {
             return await _stockRepository.GetListInventory(request);
         }
 
@@ -310,7 +310,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
 
             #endregion
 
-            var kitLog = await _stockRepository.CreateKitingLog(new PriceKitingSettings()
+            var kitLog = await _stockRepository.CreatePriceKitingSettings(new PriceKitingSettings()
             {
                 Type = dto.Type,
                 StockId = dto.StockId,
@@ -322,6 +322,13 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
             return await KitingToMobile(stockDto, kitLog, dto);
         }
 
+        /// <summary>
+        /// Chi tiết thực hiện kitting số
+        /// </summary>
+        /// <param name="stockDto"></param>
+        /// <param name="kitlog"></param>
+        /// <param name="dto"></param>
+        /// <returns></returns>
         private async Task<ResponseMessageBase<string>> KitingToMobile(InventoryDto? stockDto, PriceKitingSettings kitlog, SettingDto dto)
         {
             int totalCurrent = 0;
@@ -353,7 +360,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 }
 
                 kitlog.QuantityCurrent = totalCurrent;
-                await _stockRepository.UpdateKitingLog(kitlog);
+                await _stockRepository.UpdatePriceKitingSettings(kitlog);
                 await _stockRepository.ActivitysLog(new ActivityLogTypeDto()
                 {
                     ActionType = kitlog.Type == SettingType.Kiting
@@ -363,6 +370,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                     DesStockName = stockDto != null ? stockDto.StockName : string.Empty,
                     KitingId = kitlog.Id,
                     UserCreated = dto.UserCreated,
+                    StockId= kitlog.StockId,
                 });
 
                 _logger.LogInformation($"AddKitingToMobile => StockId= {dto.StockId} - kitingType= {dto.Type} Done !");
@@ -374,5 +382,132 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 return ResponseMessageBase<string>.Error();
             }
         }
+
+
+        /// <summary>
+        /// Thiết lập giá bán
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<ResponseMessageBase<string>> SalePriceInventory(StockSalePriceRequest request)
+        {
+            #region 1.Validate
+
+            if (request.StockId <= 0)
+                return ResponseMessageBase<string>.Error("Quý khách kiêm tra lại thông tin kho.");
+
+            if (request.ObjectType == ObjectType.List)
+            {
+                if (request.Items == null || request.Items.Count <= 0)
+                    return ResponseMessageBase<string>.Error("Danh sách không có số để thực hiện");
+            }
+
+            if (request.Value == 0)
+                return ResponseMessageBase<string>.Error("Giá trị thiết lập phải khác 0.");
+
+            var stockDto = await _stockRepository.GetInventoryDetail(request.StockId);
+
+            if (stockDto == null)
+                return ResponseMessageBase<string>.Error("Không tìm thấy kho. Quý khách kiểm tra lại thông tin.");
+
+            #endregion
+
+            var arrays = request.ObjectType == ObjectType.All ? null : request.Items;
+            var salePriceCurrent = request.SimType == OrderSimType.Mobile
+                ? await _stockRepository.GetProductListFillLog(request.StockId, arrays: arrays)
+                : await _stockRepository.GetSerialListFillLog(request.StockId, arrays: arrays);
+
+            if (salePriceCurrent == null)
+            {
+                return ResponseMessageBase<string>.Error("Không tồn tại danh sách để thực hiện. Quý khách vui lòng kiểm tra lại thông tin.");
+            }
+
+            salePriceCurrent.ForEach(c =>
+            {
+                if (request.PriceType == PriceType.Change)
+                    c.SalePrice = request.Value;
+                else if (request.PriceType == PriceType.PlusRate && c.SalePrice != 0)
+                    c.SalePrice = c.SalePrice + Math.Round(request.Value / 100 * c.SalePrice, 0);
+                else if (request.PriceType == PriceType.PlusExtra)
+                    c.SalePrice = c.SalePrice + request.Value;
+            });
+
+            var settingDto = await _stockRepository.CreatePriceKitingSettings(new PriceKitingSettings()
+            {
+                Type = SettingType.SalePrice,
+                StockId = request.StockId,                
+                Status = 1,
+                UserCreated = request.UserCreated,
+                CreatedDate = DateTime.Now,
+                Quantity = request.Items.Count()
+            });
+            return await SetSalePriceToSystem(stockDto, settingDto, salePriceCurrent, request);
+        }
+
+        /// <summary>
+        /// Đồng bộ giá bán trên hệ thống
+        /// </summary>
+        /// <param name="stockDto"></param>
+        /// <param name="kitlog"></param>
+        /// <param name="salePrices"></param>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        private async Task<ResponseMessageBase<string>> SetSalePriceToSystem(InventoryDto? stockDto, PriceKitingSettings kitlog,
+            List<SalePriceDto> salePrices, StockSalePriceRequest dto)
+        {
+            int totalCurrent = 0;
+            try
+            {
+                var dataRanger = salePrices;
+                var lt = dataRanger.Take(ConstTakeCount.TakeCount).ToList();
+                var tmpKit = lt.Select(c => c.Number).ToList();
+                dataRanger.RemoveAll(c => tmpKit.Contains(c.Number));
+                int scanInt = 0;
+                while (lt.Count > 0)
+                {
+                    _logger.LogInformation($"SetSalePriceToMobile_Step: {scanInt} - StockId= {dto.StockId}  - run_row = {lt.Count}");
+                    var arrays = (from x in lt
+                                  select new PriceKitingDetails
+                                  {
+                                      Mobile = x.Number,
+                                      Package = string.Empty,
+                                      Serial = string.Empty,
+                                      SettingId = (int)kitlog.Id,
+                                      CreatedDate = DateTime.Now,
+                                      Price = x.SalePrice,
+                                  }).ToList();
+
+                    var totalProcess = await _stockRepository.SyncSalePriceToSystem(kitlog.StockId, dto.SimType, salePrices, arrays);
+                    totalCurrent = totalCurrent + totalProcess;
+                    lt = dataRanger.Take(ConstTakeCount.TakeCount).ToList();
+                    tmpKit = lt.Select(c => c.Number).ToList();
+                    dataRanger.RemoveAll(c => tmpKit.Contains(c.Number));
+                    scanInt = scanInt + 1;
+                }
+
+                kitlog.QuantityCurrent = totalCurrent;
+                await _stockRepository.UpdatePriceKitingSettings(kitlog);
+                await _stockRepository.ActivitysLog(new ActivityLogTypeDto()
+                {
+                    ActionType = dto.SimType == OrderSimType.Mobile
+                    ? ActivityLogTypeValue.CreateSaleMobile
+                    : ActivityLogTypeValue.CreateSaleSerial,
+                    StockLevel = stockDto != null ? stockDto.StockLevel.ToString() : string.Empty,
+                    DesStockName = stockDto != null ? stockDto.StockName : string.Empty,
+                    KitingId = kitlog.Id,
+                    StockId = kitlog.StockId,
+                    UserCreated = dto.UserCreated,
+                });
+
+                _logger.LogInformation($"SetSalePriceToSystem => StockId= {dto.StockId} - SimType= {dto.SimType} Done !");
+                return ResponseMessageBase<string>.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"SetSalePriceToSystem => StockId= {dto.StockId} - SimType= {dto.SimType} Exception: {ex}");
+                return ResponseMessageBase<string>.Error();
+            }
+        }
+
     }
 }

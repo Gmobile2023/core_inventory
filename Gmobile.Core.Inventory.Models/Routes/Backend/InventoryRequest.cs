@@ -201,10 +201,11 @@ namespace Gmobile.Core.Inventory.Models.Routes.Backend
     {
         public int StockId { get; set; }
         public string UserCreated { get; set; }         
+        public OrderSimType SimType { get; set; }
+        public ObjectType ObjectType { get; set; }
         public PriceType PriceType { get; set; }
-        public ObjectType Type { get; set; }
+      
         public decimal Value { get; set; }
-
         public List<string> Items { get; set; }
     }
 }

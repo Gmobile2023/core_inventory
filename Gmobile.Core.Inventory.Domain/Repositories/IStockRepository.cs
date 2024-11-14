@@ -36,19 +36,20 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
         Task<CategoryDto?> GetCategoryDetail(string categoryCode);
         Task<ResponseMessageBase<string>> ActivitysLog(ActivityLogTypeDto activityLog);
 
-        Task<PriceKitingSettings> CreateKitingLog(PriceKitingSettings kitingDto);
+        Task<PriceKitingSettings> CreatePriceKitingSettings(PriceKitingSettings settingsDto);
 
-        Task<bool> UpdateKitingLog(PriceKitingSettings kitingDto);
+        Task<bool> UpdatePriceKitingSettings(PriceKitingSettings settingsDto);
 
         Task<int> SyncKitingToMobile(int stockId, SettingType kitType, List<PriceKitingDetails> details);
 
         Task<List<PriceKitingDetails>> GetListKitLogDetail(long kitId);
         Task SyncActivityDetailLogs(List<ActivityDetailLogs> details);
 
-        Task<List<string>> GetProductListFillLog(string souceTransCode);
-
-        Task<List<string>> GetSerialListFillLog(string souceTransCode);
+        Task<List<SalePriceDto>> GetProductListFillLog(int stockId, string souceTransCode = "", List<string>? arrays = null);
+        Task<List<SalePriceDto>> GetSerialListFillLog(int stockId, string souceTransCode = "", List<string>? arrays = null);
 
         Task<string> GetStockCodeNewByStockType(string stockType);
+
+        Task<int> SyncSalePriceToSystem(int stockId, OrderSimType simType, List<SalePriceDto> salePrices, List<PriceKitingDetails> details);
     }
 }

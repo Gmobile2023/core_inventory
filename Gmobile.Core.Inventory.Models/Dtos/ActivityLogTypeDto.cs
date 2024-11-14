@@ -25,11 +25,13 @@ namespace Gmobile.Core.Inventory.Models.Dtos
 
         public string UserCreated { get; set; }
 
+        public int StockId { get; set; }
         public long KitingId { get; set; }
     }
 
     public class ActivityLogItemInit
     {
+        public int StockId { get; set; }
         public long LogId { get; set; }
         public string ActionType { get; set; }
         public string Description { get; set; }
