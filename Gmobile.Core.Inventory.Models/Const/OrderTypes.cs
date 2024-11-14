@@ -28,5 +28,5 @@ namespace Gmobile.Core.Inventory.Models.Const
         Yellow = 2,
         Silver = 3,
         Copper = 4,
-    }
+    }    
 }

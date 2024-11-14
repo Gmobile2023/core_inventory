@@ -23,4 +23,11 @@ namespace Gmobile.Core.Inventory.Models.Dtos
 
         public string Package { get; set; }
     }
+
+    public class MemberDto
+    {
+        public string Number { get; set; }
+
+        public string Serial { get; set; }        
+    }
 }

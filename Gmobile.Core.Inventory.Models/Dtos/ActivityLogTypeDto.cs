@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Gmobile.Core.Inventory.Models.Const;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,5 +24,16 @@ namespace Gmobile.Core.Inventory.Models.Dtos
         public string StockLevel { get; set; }
 
         public string UserCreated { get; set; }
+
+        public long KitingId { get; set; }
+    }
+
+    public class ActivityLogItemInit
+    {
+        public long LogId { get; set; }
+        public string ActionType { get; set; }
+        public string Description { get; set; }
+        public string KeyCode { get; set; }
+        public long KitingId { get; set; }
     }
 }

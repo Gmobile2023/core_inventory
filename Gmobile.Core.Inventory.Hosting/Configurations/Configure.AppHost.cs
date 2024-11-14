@@ -9,6 +9,7 @@ using Inventory.Shared.CacheManager;
 using ServiceStack;
 using ServiceStack.Api.OpenApi;
 using ServiceStack.Text;
+using Hangfire;
 using HostConfig = ServiceStack.HostConfig;
 
 [assembly: HostingStartup(typeof(AppHost))]
@@ -33,7 +34,8 @@ public class AppHost() : AppHostBase("gmobile_inventory", typeof(MainService).As
                 services.AddScoped<IStockService, StockService>();
                 services.AddScoped<IOrderService, OrderService>();
                 services.AddScoped<IFileService, FileService>();
-                
+                services.AddScoped<IAutoSchedules,AutoSchedules>();
+
             })
             .ConfigureAppHost(appHost => { })
             .Configure((context, app) =>
@@ -44,6 +46,9 @@ public class AppHost() : AppHostBase("gmobile_inventory", typeof(MainService).As
                 var pathBase = context.Configuration["PATH_BASE"];
                 if (!string.IsNullOrEmpty(pathBase)) app.UsePathBase(pathBase);
                 app.UseRouting();
+
+                app.UseHangfireDashboard();
+                app.UseHangfireServer();
             });
     }
 

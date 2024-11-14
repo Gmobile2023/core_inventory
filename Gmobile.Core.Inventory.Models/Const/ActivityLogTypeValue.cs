@@ -58,10 +58,7 @@ namespace Gmobile.Core.Inventory.Models.Const
         /// 6.Kitting Serial và số
         /// </summary>
         public const string CreateKitting = "Create-Kitting";
-        public const string ConfirmKitting = "Confirm-Kitting";
-        public const string ApproveKitting = "Approve-Kitting";
-        public const string CancelKitting = "Cancel-Kitting";
-
+        public const string CreateUnKitting = "Create-Un-Kitting";
         /// <summary>
         /// 7.Thu hồi số
         /// </summary>

@@ -2,7 +2,9 @@
 using Gmobile.Core.Inventory.Models.Const;
 using Gmobile.Core.Inventory.Models.Dtos;
 using Gmobile.Core.Inventory.Models.Routes.Backend;
+using Hangfire;
 using Inventory.Shared.CacheManager;
+using Inventory.Shared.Const;
 using Inventory.Shared.Dtos.CommonDto;
 using Microsoft.Extensions.Logging;
 using ServiceStack;
@@ -20,13 +22,11 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
     {
         private readonly IIventoryConnectionFactory _connectionFactory;
         private readonly ILogger<StockRepository> _logger;
-        private readonly ICacheManager _cacheUil;
         public StockRepository(IIventoryConnectionFactory connectionFactory,
-        ICacheManager cacheUil, ILogger<StockRepository> logger)
+        ILogger<StockRepository> logger)
         {
             _connectionFactory = connectionFactory;
             _logger = logger;
-            _cacheUil = cacheUil;
         }
 
 
@@ -565,19 +565,19 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
-        private async Task<ResponseMessageBase<string>> AddLogInventoryActivitys(InventoryActivityLogDto log)
+        private async Task<long> AddLogInventoryActivitys(InventoryActivityLogDto log)
         {
             using var data = await _connectionFactory.OpenAsync();
             try
             {
-                await data.InsertAsync(log.ConvertTo<InventoryActivityLogs>());
+                var id = await data.InsertAsync(log.ConvertTo<InventoryActivityLogs>(), true);
                 _logger.LogInformation($"{log.OrderCode} AddLogInventoryActivitys. Success ");
-                return ResponseMessageBase<string>.Success();
+                return id;
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error AddLogInventoryActivitys: {log.OrderCode}  Exception: {ex}");
-                return ResponseMessageBase<string>.Error();
+                return 0;
             }
         }
 
@@ -589,23 +589,64 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
         /// <returns></returns>
         public async Task<ResponseMessageBase<string>> ActivitysLog(ActivityLogTypeDto activityLog)
         {
-            #region 1.Validate
-
-            var logDto = activityLog.ConvertTo<InventoryActivityLogDto>();
-            var actionTypeDto = await GetActionTypeByActionType(activityLog.ActionType);
-            if (actionTypeDto != null)
+            try
             {
-                logDto.Content = string.Format(actionTypeDto.Description, activityLog.OrderCode, activityLog.SrcStockName, activityLog.DesStockName);
+                #region 1.Validate
+
+                var logDto = activityLog.ConvertTo<InventoryActivityLogDto>();
+                var actionTypeDto = await GetActionTypeByActionType(activityLog.ActionType);
+                if (actionTypeDto != null)
+                {
+                    logDto.Description = string.Format(actionTypeDto.Description, activityLog.OrderCode, activityLog.SrcStockName, activityLog.DesStockName);
+                }
+
+                logDto.CreatedDate = DateTime.Now;
+                logDto.Status = 1;
+
+                #endregion
+
+                var logId = await AddLogInventoryActivitys(logDto);
+                if (logId > 0)
+                {
+                    if (activityLog.ActionType is ActivityLogTypeValue.CreateKitting or ActivityLogTypeValue.CreateUnKitting)
+                    {
+                        BackgroundJob.Schedule<IAutoSchedules>(
+                         (x) => x.ActivityLogSchedule(new ActivityLogItemInit()
+                         {
+                             ActionType = activityLog.ActionType,
+                             LogId = logId,
+                             KitingId = activityLog.KitingId,
+                             KeyCode = activityLog.OrderCode,
+                             Description = activityLog.ActionType == ActivityLogTypeValue.CreateKitting
+                             ? "Gán Kiting"
+                             : "Hủy bỏ Kiting",
+                         }), TimeSpan.FromMinutes(1));
+                    }
+                    else if (activityLog.ActionType is ActivityLogTypeValue.ConfirmMobile or ActivityLogTypeValue.ConfirmSerial)
+                    {
+                        BackgroundJob.Schedule<IAutoSchedules>(
+                        (x) => x.ActivityLogSchedule(new ActivityLogItemInit()
+                        {
+                            ActionType = activityLog.ActionType,
+                            LogId = logId,
+                            KitingId = activityLog.KitingId,
+                            KeyCode = activityLog.OrderCode,
+                            Description = activityLog.ActionType == ActivityLogTypeValue.ConfirmMobile
+                            ? "Nhập số vào kho"
+                            : "Nhập serial vào kho",
+                        }), TimeSpan.FromMinutes(1));
+                    }
+                }
+                return logId > 0
+                    ? ResponseMessageBase<string>.Success()
+                    : ResponseMessageBase<string>.Error();
             }
-
-            logDto.CreatedDate = DateTime.Now;
-            logDto.Status = 1;
-
-            #endregion
-
-            return await AddLogInventoryActivitys(logDto);
+            catch (Exception ex)
+            {
+                _logger.LogError($"{activityLog.OrderCode} ActivitysLog Exception: {ex}");
+                return ResponseMessageBase<string>.Error();
+            }
         }
-
 
         public async Task<bool> UpdateKitingLog(KitingLog kitingDto)
         {
@@ -639,7 +680,6 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
-
         public async Task<int> SyncKitingToMobile(int stockId, KitingType kitType, List<KitingLogDetails> details)
         {
             using var data = await _connectionFactory.OpenAsync();
@@ -652,6 +692,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                     var d = details.FirstOrDefault(x => x.Mobile == c.Mobile);
                     if (d != null)
                     {
+                        d.Status = 1;
                         if (kitType == KitingType.Kiting)
                         {
                             c.Serial = d.Serial;
@@ -669,8 +710,6 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
 
                 await data.UpdateAllAsync(mobileDetails);
                 await data.InsertAllAsync(details);
-                //Xử lý thêm insert log
-
                 _logger.LogInformation($"SyncKitingToMobile stockId= {stockId} - Total= {details.Count} . Success ");
                 return mobileDetails.Count();
             }
@@ -681,5 +720,102 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
+        public async Task<List<KitingLogDetails>> GetListKitLogDetail(long kitId)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var details = await data.SelectAsync<KitingLogDetails>(c => c.KitingId == kitId);
+                _logger.LogInformation($"GetListKitLogDetail kitId= {kitId} . Success ");
+                return details;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error GetListKitLogDetail kitId= {kitId} Exception: {ex}");
+                return null;
+            }
+        }
+
+        public async Task SyncActivityDetailLogs(List<ActivityDetailLogs> details)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                await data.InsertAllAsync(details);
+                _logger.LogInformation($"SyncActivityDetailLogs .Success ");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error SyncActivityDetailLogs Exception: {ex}");
+            }
+        }
+
+        public async Task<List<string>> GetProductListFillLog(string souceTransCode)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var details = await data.SelectAsync<Product>(c => c.SouceTransCode == souceTransCode);
+                _logger.LogInformation($"GetProductListFillLog souceTransCode = {souceTransCode} . Success ");
+                return details.Select(c => c.Mobile).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error GetProductListFillLog souceTransCode = {souceTransCode} Exception: {ex}");
+                return null;
+            }
+        }
+
+        public async Task<List<string>> GetSerialListFillLog(string souceTransCode)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var details = await data.SelectAsync<Serials>(c => c.SouceTransCode == souceTransCode);
+                _logger.LogInformation($"GetSerialListFillLog souceTransCode = {souceTransCode} . Success ");
+                return details.Select(c => c.Serial).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error GetSerialListFillLog souceTransCode = {souceTransCode} Exception: {ex}");
+                return null;
+            }
+        }
+
+
+        /// <summary>
+        /// Lấy mã kho mới nhất theo loại kho
+        /// </summary>
+        /// <param name="stockType"></param>
+        /// <returns></returns>
+        public async Task<string> GetStockCodeNewByStockType(string stockType)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var inventoryTypeDto = await data.SingleAsync<Entities.InventoryType>(c => c.StockType == stockType);
+                var inventoryDto = data.Select<Entities.Inventory>(c => c.StockType == stockType)
+                    .OrderByDescending(c => c.Id).Take(1).FirstOrDefault();
+                if (inventoryTypeDto != null && inventoryDto != null)
+                {
+                    var shortCode = inventoryTypeDto.StockShort;
+                    var shortCodeNow = inventoryDto.StockCode;
+                    int number = inventoryTypeDto.StockLength;
+                    if (shortCodeNow.Length >= shortCode.Length)
+                    {
+                        var s = shortCodeNow.Substring(shortCode.Length, shortCodeNow.Length - shortCode.Length);
+                        var l = Convert.ToInt32(s) + 1;
+                        return $"{shortCode}{l.ToString().PadLeft(number, '0')}";                        
+                    }
+                }
+
+                return DateTime.Now.ToString("yyMMddHHmmss"); 
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error GetStockShortByStockType: stockType= {stockType}  Exception: {ex}");
+                return DateTime.Now.ToString("yyMMddHHmmss");
+            }
+        }
     }
 }

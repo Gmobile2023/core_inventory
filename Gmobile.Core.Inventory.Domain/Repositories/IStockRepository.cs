@@ -41,5 +41,14 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
         Task<bool> UpdateKitingLog(KitingLog kitingDto);
 
         Task<int> SyncKitingToMobile(int stockId, KitingType kitType, List<KitingLogDetails> details);
+
+        Task<List<KitingLogDetails>> GetListKitLogDetail(long kitId);
+        Task SyncActivityDetailLogs(List<ActivityDetailLogs> details);
+
+        Task<List<string>> GetProductListFillLog(string souceTransCode);
+
+        Task<List<string>> GetSerialListFillLog(string souceTransCode);
+
+        Task<string> GetStockCodeNewByStockType(string stockType);
     }
 }

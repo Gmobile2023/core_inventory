@@ -21,6 +21,7 @@ namespace Gmobile.Core.Inventory.Domain.Entities
         [StringLength(30)] public string Serial { get; set; }
 
         [StringLength(15)] public string Package { get; set; }
+        public int Status { get; set; }
         public DateTime CreatedDate { get; set; }
     }
 }

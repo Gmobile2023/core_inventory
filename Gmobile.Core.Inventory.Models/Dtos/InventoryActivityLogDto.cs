@@ -15,7 +15,7 @@ namespace Gmobile.Core.Inventory.Models.Dtos
 
         public string ActionType { get; set; }
 
-        public string Content { get; set; }
+        public string Description { get; set; }
 
         public string UserCreated { get; set; }
         public DateTime CreatedDate { get; set; }

@@ -18,8 +18,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
     public class OrderService : IOrderService
     {
         private readonly IStockRepository _stockRepository;
-        private readonly IOrderRepository _orderRepository;
-        private readonly int taskCount = 5000;
+        private readonly IOrderRepository _orderRepository;        
         // private readonly ITransCodeGenerator _transCodeGenerator;
 
         private readonly ILogger<OrderService> _logger;
@@ -331,8 +330,8 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
             foreach (var x in details)
             {
                 if (orderDto.SimType == OrderSimType.Serial)
-                    x.QuantityCurrent = await AddToSerial(stockDto, orderDto, x, taskCount);
-                else x.QuantityCurrent = await AddToMobile(stockDto, orderDto, x, taskCount);
+                    x.QuantityCurrent = await AddToSerial(stockDto, orderDto, x);
+                else x.QuantityCurrent = await AddToMobile(stockDto, orderDto, x);
             }
             orderDto.QuantityCurrent = details.Sum(c => c.QuantityCurrent);
             await _orderRepository.UpdateOrderTotalCurrent(orderDto, details);
@@ -346,7 +345,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
         /// <param name="details"></param>
         /// <param name="taskCount"></param>
         /// <returns></returns>
-        private async Task<int> AddToSerial(InventoryDto? stockDto, OrderDto orderDto, OrderDetailDto details, int taskCount)
+        private async Task<int> AddToSerial(InventoryDto? stockDto, OrderDto orderDto, OrderDetailDto details)
         {
 
             int totalCurrent = 0;
@@ -355,7 +354,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 var ranger = details.Range.Split('-');
                 var reponse = GenRangeData(ranger[0], ranger[1]);
                 var dataRanger = reponse.Results;
-                var lt = dataRanger.Take(taskCount).ToList();
+                var lt = dataRanger.Take(ConstSkipCount.SkipCount).ToList();
                 var serialTmp = lt.Select(c => c).ToList();
                 dataRanger = dataRanger.Except(serialTmp).ToList();
                 int scanInt = 0;
@@ -392,7 +391,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                         totalCurrent = totalCurrent + await _orderRepository.SyncToSerial(orderDto.OrderCode, arrays);
                     }
 
-                    lt = dataRanger.Take(taskCount).ToList();
+                    lt = dataRanger.Take(ConstSkipCount.SkipCount).ToList();
                     serialTmp = lt.Select(c => c).ToList();
                     dataRanger = dataRanger.Except(serialTmp).ToList();
                     scanInt = scanInt + 1;
@@ -414,7 +413,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
         /// <param name="details"></param>
         /// <param name="taskCount"></param>
         /// <returns></returns>
-        private async Task<int> AddToMobile(InventoryDto? stockDto, OrderDto orderDto, OrderDetailDto details, int taskCount)
+        private async Task<int> AddToMobile(InventoryDto? stockDto, OrderDto orderDto, OrderDetailDto details)
         {
             int totalCurrent = 0;
             try
@@ -422,7 +421,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 var ranger = details.Range.Split('-');
                 var reponse = GenRangeData(ranger[0], ranger[1]);
                 var dataRanger = reponse.Results;
-                var lt = dataRanger.Take(taskCount).ToList();
+                var lt = dataRanger.Take(ConstSkipCount.SkipCount).ToList();
                 var serialTmp = lt.Select(c => c).ToList();
                 dataRanger = dataRanger.Except(serialTmp).ToList();
                 int scanInt = 0;
@@ -463,7 +462,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                         totalCurrent = totalCurrent + await _orderRepository.SyncToMobile(orderDto.OrderCode, arrays);
                     }
 
-                    lt = dataRanger.Take(taskCount).ToList();
+                    lt = dataRanger.Take(ConstSkipCount.SkipCount).ToList();
                     serialTmp = lt.Select(c => c).ToList();
                     dataRanger = dataRanger.Except(serialTmp).ToList();
                     scanInt = scanInt + 1;

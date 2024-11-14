@@ -32,7 +32,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
         /// <param name="request"></param>
         /// <returns></returns>
         public async Task<ResponseMessageBase<PagedResultDto<InventoryDto>>> GetListInventory(StockListRequest request)
-        {
+        {            
             return await _stockRepository.GetListInventory(request);
         }
 
@@ -68,7 +68,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 return ResponseMessageBase<string>.Error(ResponseCodeConst.EmptyName, "Tên kho không được để trống");
 
             if (string.IsNullOrEmpty(request.StockType))
-                return ResponseMessageBase<string>.Error(ResponseCodeConst.EmptyLevel, "Cấp kho không được để trống");
+                return ResponseMessageBase<string>.Error(ResponseCodeConst.EmptyLevel, "Loại kho không được để trống");
 
 
             if (string.IsNullOrEmpty(request.UserCreated))
@@ -100,6 +100,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
 
             inventoryDto.CreatedDate = DateTime.Now;
             var roleItems = request.RoleTypes.ConvertTo<List<InventoryRoleDto>>();
+            inventoryDto.StockCode = await _stockRepository.GetStockCodeNewByStockType(inventoryDto.StockType);
 
             var reponse = await _stockRepository.CreateInventory(inventoryDto, roleItems);
             if (reponse.ResponseStatus.ErrorCode == ResponseCodeConst.Success)
@@ -318,16 +319,16 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 CreatedDate = DateTime.Now,
                 Quantity = dto.Items.Count()
             });
-            return await KitingToMobile(stockDto, kitLog, dto, 5000);
+            return await KitingToMobile(stockDto, kitLog, dto);
         }
 
-        private async Task<ResponseMessageBase<string>> KitingToMobile(InventoryDto? stockDto, KitingLog kitlog, KitingDto dto, int taskCount)
+        private async Task<ResponseMessageBase<string>> KitingToMobile(InventoryDto? stockDto, KitingLog kitlog, KitingDto dto)
         {
             int totalCurrent = 0;
             try
             {
                 var dataRanger = dto.Items;
-                var lt = dataRanger.Take(taskCount).ToList();
+                var lt = dataRanger.Take(ConstSkipCount.SkipCount).ToList();
                 var tmpKit = lt.Select(c => c.Mobile).ToList();
                 dataRanger.RemoveAll(c => tmpKit.Contains(c.Mobile));
                 int scanInt = 0;
@@ -345,7 +346,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                                   }).ToList();
 
                     totalCurrent = totalCurrent + await _stockRepository.SyncKitingToMobile(kitlog.StockId, kitlog.KitingType, arrays);
-                    lt = dataRanger.Take(taskCount).ToList();
+                    lt = dataRanger.Take(ConstSkipCount.SkipCount).ToList();
                     tmpKit = lt.Select(c => c.Mobile).ToList();
                     dataRanger.RemoveAll(c => tmpKit.Contains(c.Mobile));
                     scanInt = scanInt + 1;
@@ -353,6 +354,18 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
 
                 kitlog.QuantityCurrent = totalCurrent;
                 await _stockRepository.UpdateKitingLog(kitlog);
+                await _stockRepository.ActivitysLog(new ActivityLogTypeDto()
+                {
+                    ActionType = kitlog.KitingType == KitingType.Kiting
+                    ? ActivityLogTypeValue.CreateKitting
+                    : ActivityLogTypeValue.CreateUnKitting,
+                    StockLevel = stockDto != null ? stockDto.StockLevel.ToString() : string.Empty,
+                    DesStockName = stockDto != null ? stockDto.StockName : string.Empty,
+                    KitingId = kitlog.Id,
+                    UserCreated = dto.UserCreated,
+                });
+
+                _logger.LogInformation($"AddKitingToMobile => StockId= {dto.StockId} - kitingType= {dto.Type} Done !");
                 return ResponseMessageBase<string>.Success();
             }
             catch (Exception ex)

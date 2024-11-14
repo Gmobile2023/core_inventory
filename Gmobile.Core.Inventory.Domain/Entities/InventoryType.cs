@@ -28,5 +28,9 @@ namespace Gmobile.Core.Inventory.Domain.Entities
         [StringLength(30)] public string UserConfirm { get; set; }
 
         public DateTime ? ConfirmDate { get; set; }
+
+        [StringLength(15)] public string StockShort { get; set; }
+
+        public int StockLength { get; set; }
     }
 }
