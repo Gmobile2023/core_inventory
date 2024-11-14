@@ -36,30 +36,23 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
         {
             try
             {
-                if (dto.ActionType is ActivityLogTypeValue.CreateKitting or ActivityLogTypeValue.CreateUnKitting)
+                List<MemberDto>? dataRanger = null;
+                if (dto.ActionType is ActivityLogTypeValue.CreateKitting or ActivityLogTypeValue.CreateUnKitting
+                    or ActivityLogTypeValue.CreateSaleSerial or ActivityLogTypeValue.CreateSaleMobile)
                 {
                     var data = await _stockRepository.GetListKitLogDetail(dto.KitingId);
-                    var dataRanger = ConvertInitToData(dto.ActionType, data);
-                    await SyncActivityDetailLog(dto.LogId, dto.Description, dataRanger);
+                    dataRanger = ConvertInitToData(dto.ActionType, data);
                 }
-                else if (dto.ActionType is ActivityLogTypeValue.ConfirmSerial)
+                else if (dto.ActionType is ActivityLogTypeValue.ConfirmSerial or ActivityLogTypeValue.ConfirmMobile)
                 {
-                    var data = await _stockRepository.GetSerialListFillLog(dto.StockId, souceTransCode: dto.KeyCode);
-                    var dataRanger = ConvertInitToData(dto.ActionType, data);
-                    await SyncActivityDetailLog(dto.LogId, dto.Description, dataRanger);
+                    var data = dto.ActionType is ActivityLogTypeValue.ConfirmSerial
+                        ? await _stockRepository.GetSerialListFillLog(dto.StockId, souceTransCode: dto.KeyCode)
+                        : await _stockRepository.GetProductListFillLog(dto.StockId, souceTransCode: dto.KeyCode);
+                    dataRanger = ConvertInitToData(dto.ActionType, data);
                 }
-                else if (dto.ActionType is ActivityLogTypeValue.ConfirmMobile)
-                {
-                    var data = await _stockRepository.GetProductListFillLog(dto.StockId, souceTransCode: dto.KeyCode);
-                    var dataRanger = ConvertInitToData(dto.ActionType, data);
+
+                if (dataRanger != null && dataRanger.Count > 0)
                     await SyncActivityDetailLog(dto.LogId, dto.Description, dataRanger);
-                }
-                else if (dto.ActionType is ActivityLogTypeValue.CreateSaleSerial or ActivityLogTypeValue.CreateSaleMobile)
-                {
-                    var data = await _stockRepository.GetProductListFillLog(dto.StockId, souceTransCode: dto.KeyCode);
-                    var dataRanger = ConvertInitToData(dto.ActionType, data);
-                    await SyncActivityDetailLog(dto.LogId, dto.Description, dataRanger);
-                }
             }
             catch (Exception ex)
             {
@@ -68,6 +61,13 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
+        /// <summary>
+        /// Thực hiện ghi nhận thêm phần lịch sử chi tiết số/serial
+        /// </summary>
+        /// <param name="logId"></param>
+        /// <param name="description"></param>
+        /// <param name="dataRanger"></param>
+        /// <returns></returns>
         private async Task<ResponseMessageBase<string>> SyncActivityDetailLog(long logId, string description, List<MemberDto> dataRanger)
         {
             try
@@ -119,7 +119,8 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
         private List<MemberDto> ConvertInitToData<T>(string actionType, List<T> data)
         {
             var item = new List<MemberDto>();
-            if (actionType is ActivityLogTypeValue.CreateKitting or ActivityLogTypeValue.CreateUnKitting)
+            if (actionType is ActivityLogTypeValue.CreateKitting or ActivityLogTypeValue.CreateUnKitting
+                or ActivityLogTypeValue.CreateSaleSerial or ActivityLogTypeValue.CreateSaleMobile)
             {
                 var dataRanger = data.ConvertTo<List<PriceKitingDetails>>();
                 item = (from x in dataRanger
@@ -127,6 +128,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                         {
                             Number = x.Mobile,
                             Serial = x.Serial,
+                            SalePrice = x.Price,
                         }).ToList();
             }
             else if (actionType is ActivityLogTypeValue.ConfirmSerial)

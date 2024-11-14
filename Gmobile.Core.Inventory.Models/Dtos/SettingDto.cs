@@ -30,6 +30,8 @@ namespace Gmobile.Core.Inventory.Models.Dtos
     {
         public string Number { get; set; }
 
-        public string Serial { get; set; }        
+        public string Serial { get; set; }
+
+        public decimal SalePrice { get; set; }
     }
 }
