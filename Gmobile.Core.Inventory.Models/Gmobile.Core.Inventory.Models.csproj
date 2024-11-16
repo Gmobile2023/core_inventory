@@ -19,10 +19,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Routes\Backend\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\Inventory.Shared\Inventory.Shared.csproj" />
     </ItemGroup>
 

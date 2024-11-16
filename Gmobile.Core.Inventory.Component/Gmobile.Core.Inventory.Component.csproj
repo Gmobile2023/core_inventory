@@ -7,6 +7,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Hangfire" Version="1.8.7" />
 		<PackageReference Include="ServiceStack" Version="8.4.0" />
 		<PackageReference Include="ServiceStack.GrpcClient" Version="8.4.0" />
 	</ItemGroup>
@@ -19,6 +20,7 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <Folder Include="Consumers\" />
+	  <Folder Include="Grains\" />
 	  <Folder Include="Process\" />
 	</ItemGroup>
 
