@@ -86,5 +86,47 @@ namespace Gmobile.Core.Inventory.Models.Routes.Backend
         public string FromRange { get; set; }
 
         public string ToRange { get; set; }
+
+        public int Quantity { get; set; }
     }
+
+
+    [Description("Tạo đơn điều chuyển số/sim 2 kho")]
+    [Tag(Name = "Transfer")]
+    [Route("/api/v1/Stock/Transfer", "POST")]
+    public class OrderTransferCreatedRequest : IPost, IReturn<object>
+    {
+        public string CategoryCode { get; set; }
+
+        public string Title { get; set; }
+
+        public string Description { get; set; }
+
+        /// <summary>
+        /// Mã kho chuyển
+        /// </summary>
+        public string SrcStockCode { get; set; }
+
+        /// <summary>
+        /// Mã kho nhận
+        /// </summary>
+        public string DesStockCode { get; set; }
+
+        public string UserCreated { get; set; }
+
+        public ObjectType ObjectType { get; set; }
+
+        public OrderSimType SimType { get; set; }
+
+        /// <summary>
+        /// Lấy sim/số theo điều kiện lọc
+        /// </summary>
+        public OrderItem RangeRule { get; set; }
+        /// <summary>
+        /// Lấy sim/số theo hướng lựa chọn
+        /// </summary>
+        public List<string> RangeItems { get; set; }
+        
+    }
+
 }

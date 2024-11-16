@@ -1,4 +1,5 @@
-﻿using Gmobile.Core.Inventory.Domain.Entities;
+﻿using Elasticsearch.Net;
+using Gmobile.Core.Inventory.Domain.Entities;
 using Gmobile.Core.Inventory.Domain.Repositories;
 using Gmobile.Core.Inventory.Models.Const;
 using Gmobile.Core.Inventory.Models.Dtos;
@@ -18,9 +19,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
     public class OrderService : IOrderService
     {
         private readonly IStockRepository _stockRepository;
-        private readonly IOrderRepository _orderRepository;        
-        // private readonly ITransCodeGenerator _transCodeGenerator;
-
+        private readonly IOrderRepository _orderRepository;
         private readonly ILogger<OrderService> _logger;
         public OrderService(IStockRepository stockRepository, IOrderRepository orderRepository, ILogger<OrderService> logger)
         {
@@ -123,8 +122,8 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
             if (messagerOrder.ResponseStatus.ErrorCode == ResponseCodeConst.Success)
                 await _stockRepository.ActivitysLog(new ActivityLogTypeDto()
                 {
-                    ActionType = request.SimType == OrderSimType.Serial 
-                    ? ActivityLogTypeValue.CreateSerial 
+                    ActionType = request.SimType == OrderSimType.Serial
+                    ? ActivityLogTypeValue.CreateSerial
                     : ActivityLogTypeValue.CreateMobile,
                     StockLevel = inventoryDto.StockType,
                     DesStockName = inventoryDto.StockName,
@@ -157,8 +156,6 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 return ResponseMessageBase<OrderMessage>.Error("Quý khách chưa người thực hiện");
             }
 
-
-
             //Xử lý check kỹ thông tin đơn hàng           
             var orderDto = await _orderRepository.GetOrderByCode(request.OrderCode);
             if (orderDto == null)
@@ -180,8 +177,6 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
             {
                 return ResponseMessageBase<OrderMessage>.Error("Đơn hàng đã được xác nhận.");
             }
-
-
 
             #endregion
 
@@ -329,9 +324,17 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
         {
             foreach (var x in details)
             {
-                if (orderDto.SimType == OrderSimType.Serial)
-                    x.QuantityCurrent = await AddToSerial(stockDto, orderDto, x);
-                else x.QuantityCurrent = await AddToMobile(stockDto, orderDto, x);
+                //1.Nhap moi về kho
+                if (orderDto.OrderType == OrderValueType.Import)
+                {
+                    if (orderDto.SimType == OrderSimType.Serial)
+                        x.QuantityCurrent = await AddToSerial(stockDto, orderDto, x);
+                    else x.QuantityCurrent = await AddToMobile(stockDto, orderDto, x);
+                }
+                else if (orderDto.OrderType == OrderValueType.Transfer)
+                {
+                    x.QuantityCurrent = await ExchangeStockToData(stockDto ?? new InventoryDto(), orderDto, x);
+                }
             }
             orderDto.QuantityCurrent = details.Sum(c => c.QuantityCurrent);
             await _orderRepository.UpdateOrderTotalCurrent(orderDto, details);
@@ -476,5 +479,237 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 return totalCurrent;
             }
         }
+
+
+        /// <summary>
+        /// Tạo đơn hàng điều chuyển giữa 2 kho
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<ResponseMessageBase<OrderMessage>> OrderTransferCreate(OrderTransferCreatedRequest request)
+        {
+            #region *****.Validate
+
+            request.SrcStockCode = (request.SrcStockCode ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(request.SrcStockCode))
+            {
+                return ResponseMessageBase<OrderMessage>.Error("Quý khách chưa truyền kho chuyển");
+            }
+
+            request.DesStockCode = (request.DesStockCode ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(request.DesStockCode))
+            {
+                return ResponseMessageBase<OrderMessage>.Error("Quý khách chưa truyền kho nhận");
+            }
+
+            request.CategoryCode = (request.CategoryCode ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(request.CategoryCode))
+            {
+                return ResponseMessageBase<OrderMessage>.Error("Quý khách chưa truyền mã loại sản phẩm");
+            }
+
+            request.UserCreated = (request.UserCreated ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(request.UserCreated))
+            {
+                return ResponseMessageBase<OrderMessage>.Error("Quý khách chưa người thực hiện");
+            }
+
+
+            if (request.ObjectType == ObjectType.List)
+            {
+                if (request.RangeItems == null || request.RangeItems.Count <= 0)
+                    return ResponseMessageBase<OrderMessage>.Error("Quý khách chưa truyền danh sách sim/số để tạo phiếu.");
+            }
+            else
+            {
+                if (request.RangeRule == null || request.RangeRule.Quantity <= 0)
+                    return ResponseMessageBase<OrderMessage>.Error("Quý khách kiểm tra lại số lượng cần tạo yêu cầu.");
+            }
+
+
+            var categoryDto = await _stockRepository.GetCategoryDetail(request.CategoryCode);
+
+            if (categoryDto == null)
+            {
+                return ResponseMessageBase<OrderMessage>.Error("Không tồn tại loại sản phẩm.");
+            }
+
+            //Xử lý check kỹ thông tin đơn hàng
+
+            var inventorySrcDto = await _stockRepository.GetInventoryDetail(request.SrcStockCode);
+            if (inventorySrcDto == null)
+            {
+                return ResponseMessageBase<OrderMessage>.Error("Quý khách kiểm tra lại thông tin kho chuyển.");
+            }
+
+            var inventoryDesDto = await _stockRepository.GetInventoryDetail(request.DesStockCode);
+            if (inventoryDesDto == null)
+            {
+                return ResponseMessageBase<OrderMessage>.Error("Quý khách kiểm tra lại thông tin kho nhận.");
+            }
+
+            var list = await _stockRepository.GetListDataTransfer((int)inventorySrcDto.Id, request.SimType, request.ObjectType, request.RangeRule, request.RangeItems);
+            if (list == null && list?.Count() <= 0)
+            {
+                return ResponseMessageBase<OrderMessage>.Error("Quý khách kiểm tra lại thông tin sim/số.");
+            }
+
+            #endregion
+
+            #region 2.Thực thi đơn hàng
+
+            var items = new List<OrderDetailDto>();
+            items.Add(new OrderDetailDto()
+            {
+                CategoryCode = categoryDto.CategoryCode,
+                CategoryId = (int)categoryDto.Id,
+                CostPrice = 0,
+                Quantity = list?.Count() ?? 0,
+                TelCo = string.Empty,
+                Range = string.Empty,
+                SalePrice = list?.Sum(c => c.SalePrice) ?? 0,
+            });
+            var orderDto = new OrderDto()
+            {
+                SrcStockCode = inventorySrcDto.StockCode,
+                SrcStockId = (int)inventorySrcDto.Id,
+                DesStockCode = inventoryDesDto.StockCode,
+                DesStockId = (int)inventoryDesDto.Id,
+                OrderType = OrderValueType.Transfer,
+                OrderTitle = request.Title,
+                Description = request.Description,
+                UserCreated = request.UserCreated,
+                CreatedDate = DateTime.Now,
+                Quantity = items.Sum(c => c.Quantity),
+                CostPrice = items.Sum(c => c.CostPrice),
+                SimType = request.SimType,
+                Status = OrderStatus.Init,
+            };
+
+            var lstData = list?.Select(c => c.Number).ToList() ?? new List<string>();
+            orderDto.OrderCode = $"PX{DateTime.Now.ToString("yyMMddHHmmssfff")}";//await _transCodeGenerator.TransCodeGeneratorAsync("PN");
+            var messagerOrder = await _orderRepository.OrderCreate(orderDto, items);
+            if (messagerOrder.ResponseStatus.ErrorCode == ResponseCodeConst.Success)
+            {
+                orderDto = await _orderRepository.GetOrderByCode(orderDto.OrderCode);
+                await AddTranferToDataSimDetails(orderDto, lstData);
+                await _stockRepository.ActivitysLog(new ActivityLogTypeDto()
+                {
+                    ActionType = request.SimType == OrderSimType.Serial
+                    ? ActivityLogTypeValue.ApproveTransferSerial
+                    : ActivityLogTypeValue.ApproveTransferMobile,
+                    StockLevel = inventorySrcDto.StockType,
+                    StockId = (int)inventorySrcDto.Id,
+                    DesStockCode = inventoryDesDto.StockCode,
+                    DesStockName = inventoryDesDto.StockName,
+                    SrcStockCode = inventorySrcDto.StockCode,
+                    SrcStockName = inventorySrcDto.StockName,
+                    UserCreated = request.UserCreated,
+                    OrderCode = orderDto.OrderCode,
+                });
+            }
+            #endregion
+
+            return messagerOrder;
+        }
+
+
+        /// <summary>
+        /// Đồng bộ sim/số chi tiết
+        /// </summary>
+        /// <param name="orderDto"></param>
+        /// <param name="orderDetailId"></param>
+        /// <param name="details"></param>
+        /// <returns></returns>
+        private async Task<int> AddTranferToDataSimDetails(OrderDto orderDto, List<string> details)
+        {
+            int totalCurrent = 0;
+            try
+            {
+                var orderDetails = await _orderRepository.GetListOrderDetail((int)orderDto.Id);
+                var orderDetailId = (int)orderDetails.First().Id;
+                var dataRanger = details;
+                var lt = dataRanger.Take(ConstTakeCount.TakeCount).ToList();
+                var serialTmp = lt.Select(c => c).ToList();
+                dataRanger = dataRanger.Except(serialTmp).ToList();
+                int scanInt = 0;
+                while (lt.Count > 0)
+                {
+                    _logger.LogInformation($"AddTranferToDataSimDetails_Step: {scanInt} - OrderCode= {orderDto.OrderCode} - simType= {orderDto.SimType} - run_row = {lt.Count}");
+                    var serialTmps = lt.Select(c => c).ToList();
+                    var searchs = await _orderRepository.GetListMobileToList(serialTmps);
+                    if (searchs != null)
+                    {
+                        if (searchs.Count > 0)
+                            lt = lt.Except(searchs.ToList()).ToList();
+
+                        _logger.LogInformation($"AddTranferToDataSimDetails_Step: {scanInt} - OrderCode= {orderDto.OrderCode} - simType= {orderDto.SimType} - run_curent = {lt.Count}");
+                        var arrays = (from x in lt
+                                      select new SimDetails
+                                      {
+                                          OrderDetailId = orderDetailId,
+                                          SimNumber = x,
+                                      }).ToList();
+
+                        totalCurrent = totalCurrent + await _orderRepository.SyncSimDetails(orderDto.OrderCode, arrays);
+                    }
+
+                    lt = dataRanger.Take(ConstTakeCount.TakeCount).ToList();
+                    serialTmp = lt.Select(c => c).ToList();
+                    dataRanger = dataRanger.Except(serialTmp).ToList();
+                    scanInt = scanInt + 1;
+                }
+
+                return totalCurrent;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"AddTranferToDataSimDetails => OrderCode= {orderDto.OrderCode} Exception: {ex}");
+                return totalCurrent;
+            }
+        }
+
+        /// <summary>
+        /// Xuất điều chuyển kho
+        /// </summary>
+        /// <param name="desStockDto"></param>
+        /// <param name="orderDto"></param>
+        /// <param name="details"></param>
+        /// <returns></returns>
+        private async Task<int> ExchangeStockToData(InventoryDto desStockDto, OrderDto orderDto, OrderDetailDto details)
+        {
+            int totalCurrent = 0;
+            try
+            {
+                var simDetails = await _orderRepository.GetListSimDetailsByOrderDetailId((int)details.Id);
+                var ranges = simDetails.Select(c => c.SimNumber).ToList();
+                var lt = ranges.Take(ConstTakeCount.TakeCount).ToList();
+                var sTmp = lt.Select(c => c).ToList();
+                ranges = ranges.Except(sTmp).ToList();
+                int scanInt = 0;
+                while (lt.Count > 0)
+                {
+                    _logger.LogInformation($"ExchangeStockToData_Step: {scanInt} - OrderCode= {orderDto.OrderCode} - SimType= {orderDto.SimType} - run_row = {lt.Count}");
+                    var currnetNow = orderDto.SimType == OrderSimType.Mobile
+                        ? await _orderRepository.SyncExchangeStockToMobile(orderDto.SrcStockId ?? 0, desStockDto, orderDto.OrderCode, lt)
+                        : await _orderRepository.SyncExchangeStockToSerial(orderDto.SrcStockId ?? 0, desStockDto, orderDto.OrderCode, lt);
+
+                    totalCurrent = totalCurrent + currnetNow;
+                    lt = ranges.Take(ConstTakeCount.TakeCount).ToList();
+                    sTmp = lt.Select(c => c).ToList();
+                    ranges = ranges.Except(sTmp).ToList();
+                    scanInt = scanInt + 1;
+                }
+
+                return totalCurrent;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"ExchangeStockToData => OrderCode= {orderDto.OrderCode} - SimType= {orderDto.SimType} Exception: {ex}");
+                return totalCurrent;
+            }
+        }
+
+
     }
 }

@@ -260,6 +260,28 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
+        /// <summary>
+        /// Lưu chi tiết thông tin sim/số
+        /// </summary>
+        /// <param name="orderCode"></param>
+        /// <param name="simDetails"></param>
+        /// <returns></returns>
+        public async Task<int> SyncSimDetails(string orderCode, List<SimDetails> simDetails)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                await data.InsertAllAsync(simDetails);
+                _logger.LogInformation($"SyncSimDetails OrderCode= {orderCode} - Total= {simDetails.Count} . Success ");
+                return simDetails.Count();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error SyncSimDetails OrderCode= {orderCode} - Total= {simDetails.Count}  Exception: {ex}");
+                return 0;
+            }
+        }
+
         public async Task<List<string>> GetListSerialToList(List<string> serials)
         {
             using var data = await _connectionFactory.OpenAsync();
@@ -318,6 +340,89 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                 trans.Rollback();
                 _logger.LogError($"Error UpdateOrderTotalCurrent- OrderId= {orderDto.OrderCode} Exception: {ex}");
                 return false;
+            }
+        }
+
+        public async Task<List<SimDetails>> GetListSimDetailsByOrderDetailId(int orderDetailId)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var details = await data.SelectAsync<Entities.SimDetails>(c => c.OrderDetailId == orderDetailId);
+                return details;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error GetListSimDetailsByOrderDetailId Exception: {ex}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Cập nhật Số sang kho mới
+        /// </summary>
+        /// <param name="srcStockId"></param>
+        /// <param name="desStock"></param>
+        /// <param name="orderCode"></param>
+        /// <param name="mobiles"></param>
+        /// <returns></returns>
+        public async Task<int> SyncExchangeStockToMobile(int srcStockId, InventoryDto desStock, string orderCode, List<string> mobiles)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var mobileDetails = await data.SelectAsync<Entities.Product>(c => c.StockId == srcStockId 
+                && mobiles.Contains(c.Mobile) && c.Status == ProductStatus.Success);
+                mobileDetails.ForEach(c =>
+                {
+                    c.StockId = (int)desStock.Id;
+                    c.StockCurrentCode = desStock.StockCode;
+                    c.TreePath = desStock.TreePath;
+                    c.TransCode = orderCode;
+                    c.ConfirmDate = DateTime.Now;
+                });
+                await data.UpdateAllAsync(mobileDetails);
+                _logger.LogInformation($"SyncExchangeStockToMobile OrderCode= {orderCode} - Total= {mobileDetails.Count()} . Success ");
+                return mobileDetails.Count();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error SyncExchangeStockToMobile OrderCode= {orderCode} - Total= {mobiles.Count}  Exception: {ex}");
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Cập nhật Serial sang kho mới
+        /// </summary>
+        /// <param name="srcStockId"></param>
+        /// <param name="desStock"></param>
+        /// <param name="orderCode"></param>
+        /// <param name="mobiles"></param>
+        /// <returns></returns>
+        public async Task<int> SyncExchangeStockToSerial(int srcStockId, InventoryDto desStock, string orderCode, List<string> mobiles)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var serialDetails = await data.SelectAsync<Entities.Serials>(c => c.StockId == srcStockId
+                && mobiles.Contains(c.Serial) && c.Status == SerialStatus.Success);
+                serialDetails.ForEach(c =>
+                {
+                    c.StockId = (int)desStock.Id;
+                    c.StockCurrentCode = desStock.StockCode;
+                    c.TreePath = desStock.TreePath;
+                    c.TransCode = orderCode;
+                    c.ConfirmDate = DateTime.Now;
+                });
+                await data.UpdateAllAsync(serialDetails);
+                _logger.LogInformation($"SyncExchangeStockToSerial OrderCode= {orderCode} - Total= {serialDetails.Count()} . Success ");
+                return serialDetails.Count();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error SyncExchangeStockToSerial OrderCode= {orderCode} - Total= {mobiles.Count}  Exception: {ex}");
+                return 0;
             }
         }
 

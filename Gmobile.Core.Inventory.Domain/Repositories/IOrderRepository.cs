@@ -24,12 +24,20 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
 
         Task<int> SyncToSerial(string orderCode, List<Serials> serials);
 
+        Task<int> SyncSimDetails(string orderCode, List<SimDetails> simDetails);
+
         Task<List<OrderDetailDto>> GetListOrderDetail(int orderId);
 
         Task<List<string>> GetListMobileToList(List<string> mobiles);
 
         Task<List<string>> GetListSerialToList(List<string> serials);
-       
+
+        Task<List<SimDetails>> GetListSimDetailsByOrderDetailId(int orderDetailId);
+
         Task<OrderDto?> GetOrderByCode(string orderCode);
+
+        Task<int> SyncExchangeStockToMobile(int srcStockId, InventoryDto desStock, string orderCode, List<string> mobiles);
+
+        Task<int> SyncExchangeStockToSerial(int srcStockId, InventoryDto desStock, string orderCode, List<string> mobiles);
     }
 }

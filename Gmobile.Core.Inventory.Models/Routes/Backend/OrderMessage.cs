@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Gmobile.Core.Inventory.Models.Dtos;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,5 +12,6 @@ namespace Gmobile.Core.Inventory.Models.Routes.Backend
         public string OrderCode { get; set; }
         public decimal Quantity { get; set; }
         public decimal Amount { get; set; }
+        public List<OrderDetailDto> Details { get; set; }
     }    
 }

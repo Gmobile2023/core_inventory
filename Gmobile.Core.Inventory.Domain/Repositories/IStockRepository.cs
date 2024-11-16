@@ -51,5 +51,9 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
         Task<string> GetStockCodeNewByStockType(string stockType);
 
         Task<int> SyncSalePriceToSystem(int stockId, OrderSimType simType, List<SalePriceDto> salePrices, List<PriceKitingDetails> details);
+
+        Task<List<SalePriceDto>> GetListDataTransfer(int stockId, OrderSimType simType, ObjectType objectType,
+            OrderItem rangeRule, List<string> rangeItems);
     }
+
 }

@@ -16,7 +16,7 @@ namespace Gmobile.Core.Inventory.Models.Const
 
     public enum OrderSimType : byte
     {
-        Mobile = 1,        
+        Mobile = 1,
         Serial = 2,
     }
 
@@ -27,5 +27,6 @@ namespace Gmobile.Core.Inventory.Models.Const
         Yellow = 2,
         Silver = 3,
         Copper = 4,
-    }    
+        Default = 99,
+    }
 }

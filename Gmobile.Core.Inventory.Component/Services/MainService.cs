@@ -197,6 +197,20 @@ public class MainService : Service
         return rs;
     }
 
+
+    /// <summary>
+    /// Tạo đơn hàng điều chuyển giữa 2 kho
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    public async Task<object> PostAsync(OrderTransferCreatedRequest request)
+    {
+        _logger.LogInformation($"OrderTransferCreatedRequest {request.ToJson()}");
+        var rs = await _orderService.OrderTransferCreate(request);
+        _logger.LogInformation($"OrderTransferCreated : {rs.ToJson()}");
+        return rs;
+    }
+
     #endregion
 
 }

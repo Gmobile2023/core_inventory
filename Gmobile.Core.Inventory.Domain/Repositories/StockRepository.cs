@@ -7,6 +7,7 @@ using Inventory.Shared.CacheManager;
 using Inventory.Shared.Const;
 using Inventory.Shared.Dtos.CommonDto;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using ServiceStack;
 using ServiceStack.OrmLite;
 using System;
@@ -831,6 +832,85 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
+        public async Task<List<SalePriceDto>> GetListDataTransfer(int stockId, OrderSimType simType, ObjectType objectType,
+            OrderItem rangeRule, List<string> rangeItems)
+        {
+            try
+            {
+                using var data = await _connectionFactory.OpenAsync();
+                if (simType == OrderSimType.Mobile)
+                {
+                    var query = data.From<Entities.Product>().Where(p => p.StockId == stockId && p.Status == ProductStatus.Success);
+                    if (objectType == ObjectType.All)
+                    {
+                        if (rangeRule.Attribute != OrderAttributeType.Default)
+                        {
+                            query = query.Where(c => c.Attribute == rangeRule.Attribute);
+                        }
+
+                        if (!string.IsNullOrEmpty(rangeRule.TelCo))
+                        {
+                            query = query.Where(c => c.TelCo == rangeRule.TelCo);
+                        }
+
+                        //if (!string.IsNullOrEmpty(rangeRule.FromRange))
+                        //{
+                        //    query = query.Where(c => c.Mobile >= rangeRule.FromRange);
+                        //}
+
+                        query = query.Take(rangeRule.Quantity);
+                    }
+                    else
+                    {
+                        query = query.Where(c => rangeItems.Contains(c.Mobile));
+                    }
+
+                    var details = await data.SelectAsync(query);
+                    _logger.LogInformation($"GetListDataTransfer Success ");
+                    var lst = (from x in details
+                               select new SalePriceDto()
+                               {
+                                   Number = x.Mobile,
+                                   SalePrice = x.SalePrice
+                               }).ToList();
+
+                    return lst;
+                }
+                else
+                {
+                    var query = data.From<Entities.Serials>().Where(p => p.StockId == stockId && p.Status == SerialStatus.Success);
+                    if (objectType == ObjectType.All)
+                    {
+                        query = query.Take(rangeRule.Quantity);
+                        //if (!string.IsNullOrEmpty(rangeRule.FromRange))
+                        //{
+                        //    query = query.Where(c => c.Mobile >= rangeRule.FromRange);
+                        //}
+                    }
+                    else
+                    {
+                        query = query.Where(c => rangeItems.Contains(c.Serial));
+                    }
+
+                    var details = await data.SelectAsync(query);
+                    _logger.LogInformation($"GetListDataTransfer Success ");
+
+                    var lst = (from x in details
+                               select new SalePriceDto()
+                               {
+                                   Number = x.Serial,
+                                   SalePrice = x.SalePrice
+                               }).ToList();
+
+                    return lst;
+                }              
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error GetListDataTransfer Exception: {ex}");
+                return null;
+            }
+        }
 
         /// <summary>
         /// Lấy mã kho mới nhất theo loại kho

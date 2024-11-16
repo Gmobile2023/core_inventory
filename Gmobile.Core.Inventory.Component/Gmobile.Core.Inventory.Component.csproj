@@ -20,6 +20,7 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <Folder Include="Consumers\" />
+	  <Folder Include="Grains\" />
 	  <Folder Include="Process\" />
 	</ItemGroup>
 

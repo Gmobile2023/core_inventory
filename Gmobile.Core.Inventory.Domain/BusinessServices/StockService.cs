@@ -370,7 +370,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                     DesStockName = stockDto != null ? stockDto.StockName : string.Empty,
                     KitingId = kitlog.Id,
                     UserCreated = dto.UserCreated,
-                    StockId= kitlog.StockId,
+                    StockId = kitlog.StockId,
                 });
 
                 _logger.LogInformation($"AddKitingToMobile => StockId= {dto.StockId} - kitingType= {dto.Type} Done !");
@@ -382,7 +382,6 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 return ResponseMessageBase<string>.Error();
             }
         }
-
 
         /// <summary>
         /// Thiết lập giá bán
@@ -435,7 +434,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
             var settingDto = await _stockRepository.CreatePriceKitingSettings(new PriceKitingSettings()
             {
                 Type = SettingType.SalePrice,
-                StockId = request.StockId,                
+                StockId = request.StockId,
                 Status = 1,
                 UserCreated = request.UserCreated,
                 CreatedDate = DateTime.Now,
@@ -477,7 +476,8 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                                       Price = x.SalePrice,
                                   }).ToList();
 
-                    var totalProcess = await _stockRepository.SyncSalePriceToSystem(kitlog.StockId, dto.SimType, salePrices, arrays);
+                    var itemPrice = salePrices.Where(c => tmpKit.Contains(c.Number)).ToList();
+                    var totalProcess = await _stockRepository.SyncSalePriceToSystem(kitlog.StockId, dto.SimType, itemPrice, arrays);
                     totalCurrent = totalCurrent + totalProcess;
                     lt = dataRanger.Take(ConstTakeCount.TakeCount).ToList();
                     tmpKit = lt.Select(c => c.Number).ToList();
