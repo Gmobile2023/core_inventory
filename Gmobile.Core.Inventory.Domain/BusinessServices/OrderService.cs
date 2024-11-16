@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Grpc.Core.ChannelOption;
 
 namespace Gmobile.Core.Inventory.Domain.BusinessServices
 {
@@ -106,7 +107,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
             {
                 DesStockCode = inventoryDto.StockCode,
                 DesStockId = (int)inventoryDto.Id,
-                OrderType = OrderValueType.Import,
+                OrderType = OrderTypeValue.Import,
                 OrderTitle = request.Title,
                 Description = request.Description,
                 UserCreated = request.UserCreated,
@@ -182,29 +183,23 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
 
             #region 2.Thực thi đơn hàng
 
-            var status = request.Status;
-            var actionType = string.Empty;
+            var status = request.Status;           
             if (status == OrderStatus.Approve)
             {
-                if (orderDto.SimType == OrderSimType.Serial)
-                    actionType = ActivityLogTypeValue.ApproveSerial;
-                else actionType = ActivityLogTypeValue.ApproveMobile;
                 orderDto.ApproveDate = DateTime.Now;
                 orderDto.UserApprove = request.UserCreated;
             }
             else if (status == OrderStatus.Confirm)
             {
-                if (orderDto.SimType == OrderSimType.Serial)
-                    actionType = ActivityLogTypeValue.ConfirmSerial;
-                else actionType = ActivityLogTypeValue.ConfirmMobile;
                 orderDto.ConfirmDate = DateTime.Now;
                 orderDto.UserConfirm = request.UserCreated;
             }
 
             orderDto.Status = status;
+            var actionTypeDto = await _stockRepository.GetActionTypeByOrderInfo(orderDto.OrderType, orderDto.SimType, orderDto.Status);
             var messagerOrder = await _orderRepository.ConfirmOrder(orderDto, new Entities.OrderDescription()
             {
-                ActionType = actionType,
+                ActionType = actionTypeDto!=null? actionTypeDto.AcitonType:string.Empty,
                 Description = request.Description,
             });
 
@@ -220,7 +215,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 }
                 await _stockRepository.ActivitysLog(new ActivityLogTypeDto()
                 {
-                    ActionType = actionType,
+                    ActionType = actionTypeDto != null ? actionTypeDto.AcitonType : string.Empty,
                     DesStockName = orderDto.DesStockCode,
                     DesStockCode = stockName,
                     UserCreated = request.UserCreated,
@@ -325,13 +320,13 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
             foreach (var x in details)
             {
                 //1.Nhap moi về kho
-                if (orderDto.OrderType == OrderValueType.Import)
+                if (orderDto.OrderType == OrderTypeValue.Import)
                 {
                     if (orderDto.SimType == OrderSimType.Serial)
                         x.QuantityCurrent = await AddToSerial(stockDto, orderDto, x);
                     else x.QuantityCurrent = await AddToMobile(stockDto, orderDto, x);
                 }
-                else if (orderDto.OrderType == OrderValueType.Transfer)
+                else if (orderDto.OrderType == OrderTypeValue.Transfer)
                 {
                     x.QuantityCurrent = await ExchangeStockToData(stockDto ?? new InventoryDto(), orderDto, x);
                 }
@@ -575,7 +570,7 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 SrcStockId = (int)inventorySrcDto.Id,
                 DesStockCode = inventoryDesDto.StockCode,
                 DesStockId = (int)inventoryDesDto.Id,
-                OrderType = OrderValueType.Transfer,
+                OrderType = OrderTypeValue.Transfer,
                 OrderTitle = request.Title,
                 Description = request.Description,
                 UserCreated = request.UserCreated,
@@ -640,11 +635,8 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                     var searchs = await _orderRepository.GetListMobileToList(serialTmps);
                     if (searchs != null)
                     {
-                        if (searchs.Count > 0)
-                            lt = lt.Except(searchs.ToList()).ToList();
-
-                        _logger.LogInformation($"AddTranferToDataSimDetails_Step: {scanInt} - OrderCode= {orderDto.OrderCode} - simType= {orderDto.SimType} - run_curent = {lt.Count}");
-                        var arrays = (from x in lt
+                        _logger.LogInformation($"AddTranferToDataSimDetails_Step: {scanInt} - OrderCode= {orderDto.OrderCode} - simType= {orderDto.SimType} - run_curent = {searchs.Count}");
+                        var arrays = (from x in searchs
                                       select new SimDetails
                                       {
                                           OrderDetailId = orderDetailId,
@@ -709,7 +701,5 @@ namespace Gmobile.Core.Inventory.Domain.BusinessServices
                 return totalCurrent;
             }
         }
-
-
     }
 }

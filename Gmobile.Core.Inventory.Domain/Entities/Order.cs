@@ -13,7 +13,7 @@ public class Order : AuditBase, IHasId<long>
     [AutoIncrement][PrimaryKey] public long Id { get; set; }
     [StringLength(50)] public string OrderCode { get; set; }
 
-    public OrderValueType OrderType { get; set; }
+    public OrderTypeValue OrderType { get; set; }
 
     [StringLength(200)] public string OrderTitle { get; set; }
 

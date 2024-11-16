@@ -52,7 +52,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
 
                 if (request.OrderType > 0 && request.OrderType != 99)
                 {
-                    var orderType = (OrderValueType)request.OrderType;
+                    var orderType = (OrderTypeValue)request.OrderType;
                     query = query.Where(c => c.OrderType == orderType);
                 }
 
@@ -161,12 +161,17 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                 await data.InsertAsync(orderDescription);
                 trans.Commit();
                 _logger.LogInformation($"ConfirmOrder {orderDto.OrderCode}. Success ");
-                return ResponseMessageBase<OrderMessage>.Success(new OrderMessage()
+                var messageItem = new OrderMessage()
                 {
                     OrderCode = order.OrderCode,
                     Quantity = order.Quantity,
                     Amount = order.CostPrice,
-                });
+                    OrderId = order.Id,
+                    OrderType = order.OrderType,
+                    SimType = order.SimType,
+                    Status = order.Status,
+                };
+                return ResponseMessageBase<OrderMessage>.Success(messageItem);
             }
             catch (Exception ex)
             {
@@ -371,7 +376,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             using var data = await _connectionFactory.OpenAsync();
             try
             {
-                var mobileDetails = await data.SelectAsync<Entities.Product>(c => c.StockId == srcStockId 
+                var mobileDetails = await data.SelectAsync<Entities.Product>(c => c.StockId == srcStockId
                 && mobiles.Contains(c.Mobile) && c.Status == ProductStatus.Success);
                 mobileDetails.ForEach(c =>
                 {

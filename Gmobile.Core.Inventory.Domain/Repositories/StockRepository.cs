@@ -567,6 +567,25 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
             }
         }
 
+        public async Task<ActionTypeDto?> GetActionTypeByOrderInfo(OrderTypeValue orderType, OrderSimType simType, OrderStatus orderStatus)
+        {
+            using var data = await _connectionFactory.OpenAsync();
+            try
+            {
+                var action = await data.SingleAsync<Entities.ActionTypes>(c => c.OrderType == orderType
+                && c.SimType == simType
+                && c.OrderStatus == orderStatus
+                && c.Status == 1);
+                if (action == null) return null;
+                return action.ConvertTo<ActionTypeDto>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error GetActionTypeByOrderInfo: OrderType: {orderType} -> SimType: {simType} -> OrderStatus: {orderStatus}  Exception: {ex}");
+                return null;
+            }
+        }
+
         private async Task<long> AddLogInventoryActivitys(InventoryActivityLogDto log)
         {
             using var data = await _connectionFactory.OpenAsync();
@@ -903,7 +922,7 @@ namespace Gmobile.Core.Inventory.Domain.Repositories
                                }).ToList();
 
                     return lst;
-                }              
+                }
             }
             catch (Exception ex)
             {

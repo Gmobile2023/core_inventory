@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Gmobile.Core.Inventory.Models.Const
 {
-    public enum OrderValueType : byte
+    public enum OrderTypeValue : byte
     {
         Import = 1,//Nhập mới
         Transfer = 2,//Điều chuyển

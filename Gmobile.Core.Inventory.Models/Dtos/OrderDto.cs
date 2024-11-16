@@ -14,7 +14,7 @@ namespace Gmobile.Core.Inventory.Models.Dtos
         public long Id { get; set; }
         public string OrderCode { get; set; }
 
-        public OrderValueType OrderType { get; set; }
+        public OrderTypeValue OrderType { get; set; }
 
         public string OrderTitle { get; set; }
 
